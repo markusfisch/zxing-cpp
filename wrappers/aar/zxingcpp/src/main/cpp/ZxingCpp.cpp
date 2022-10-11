@@ -112,18 +112,20 @@ static jobject CreateGTIN(JNIEnv* env, const std::string& country,
 
 static jobject CreateOptionalGTIN(JNIEnv* env, const Result& result)
 {
+	auto format = result.format();
+	auto text = result.text(TextMode::Plain);
 	if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA |
-		BarcodeFormat::UPCE).testFlag(result.format())) {
+		BarcodeFormat::UPCE).testFlag(format)) {
 		return CreateGTIN(
 			env,
-			GTIN::LookupCountryIdentifier(result.text(), result.format()),
+			GTIN::LookupCountryIdentifier(text, format),
 			GTIN::EanAddOn(result),
 			GTIN::Price(GTIN::EanAddOn(result)),
 			GTIN::IssueNr(GTIN::EanAddOn(result)));
-	} else if (result.format() == BarcodeFormat::ITF && result.text().length() == 14) {
+	} else if (format == BarcodeFormat::ITF && text.length() == 14) {
 		return CreateGTIN(
 			env,
-			GTIN::LookupCountryIdentifier(result.text(), result.format()),
+			GTIN::LookupCountryIdentifier(text, format),
 			"", "", "");
 	}
 	return nullptr;
@@ -179,7 +181,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 	return env->NewObject(
 		cls, constructor,
 		C2JString(env, JavaBarcodeFormatName(result.format())),
-		C2JString(env, result.text()),
+		C2JString(env, result.text(TextMode::Plain)),
 		CreatePosition(env, result.position()),
 		result.orientation(),
 		CreateByteArray(env, result.bytes()),
