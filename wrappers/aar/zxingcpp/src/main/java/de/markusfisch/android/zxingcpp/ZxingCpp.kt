@@ -44,6 +44,9 @@ object ZxingCpp {
 		UPC_A,
 		UPC_E,
 	}
+	enum class ContentType {
+		TEXT, BINARY, MIXED, GS1, ISO15434, UNKNOWN_ECI
+	}
 
 	data class Position(
 		val topLeft: Point,
@@ -62,6 +65,7 @@ object ZxingCpp {
 
 	data class Result(
 		val format: String,
+		val contentType: ContentType,
 		val text: String,
 		val position: Position,
 		val orientation: Int,

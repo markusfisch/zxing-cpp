@@ -55,6 +55,20 @@ static const char* JavaBarcodeFormatName(BarcodeFormat format)
 	}
 }
 
+static const char* JavaContentTypeName(ContentType contentType)
+{
+	// These have to be the names of the enum constants in the kotlin code.
+	switch (contentType) {
+	case ContentType::Text: return "TEXT";
+	case ContentType::Binary: return "BINARY";
+	case ContentType::Mixed: return "MIXED";
+	case ContentType::GS1: return "GS1";
+	case ContentType::ISO15434: return "ISO15434";
+	case ContentType::UnknownECI: return "UNKNOWN_ECI";
+	default: throw std::invalid_argument("Invalid contentType");
+	}
+}
+
 static jobject ThrowJavaException(JNIEnv* env, const char* message)
 {
 	jclass jcls = env->FindClass("java/lang/RuntimeException");
@@ -158,6 +172,16 @@ static jobject CreatePosition(JNIEnv* env, const Position& position)
 		position.orientation());
 }
 
+static jobject CreateContentType(JNIEnv* env, ContentType contentType)
+{
+	jclass cls = env->FindClass(
+		"de/markusfisch/android/zxingcpp/ZxingCpp$ContentType");
+	jfieldID fidCT = env->GetStaticFieldID(cls,
+		JavaContentTypeName(contentType),
+		"Lde/markusfisch/android/zxingcpp/ZxingCpp$ContentType;");
+	return env->GetStaticObjectField(cls, fidCT);
+}
+
 static jobject CreateResult(JNIEnv* env, const Result& result)
 {
 	jclass cls = env->FindClass(
@@ -165,6 +189,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
 		"(Ljava/lang/String;"
+		"Lde/markusfisch/android/zxingcpp/ZxingCpp$ContentType;"
 		"Ljava/lang/String;"
 		"Lde/markusfisch/android/zxingcpp/ZxingCpp$Position;"
 		"I"
@@ -181,7 +206,8 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 	return env->NewObject(
 		cls, constructor,
 		C2JString(env, JavaBarcodeFormatName(result.format())),
-		C2JString(env, result.text(TextMode::Plain)),
+		CreateContentType(env, result.contentType()),
+		C2JString(env, result.text()),
 		CreatePosition(env, result.position()),
 		result.orientation(),
 		CreateByteArray(env, result.bytes()),
