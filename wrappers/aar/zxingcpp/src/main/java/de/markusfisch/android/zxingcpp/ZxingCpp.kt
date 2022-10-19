@@ -204,7 +204,7 @@ object ZxingCpp {
 		encoding: String = "UTF8",
 		setColor: Int = 0xff000000.toInt(),
 		unsetColor: Int = 0xffffffff.toInt()
-	): Bitmap? {
+	): Bitmap {
 		val bitMatrix = encode(
 			text, format.toString(),
 			width, height,
