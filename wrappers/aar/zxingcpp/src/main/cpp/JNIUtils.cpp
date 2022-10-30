@@ -1,19 +1,10 @@
 /*
 * Copyright 2016 Nu-book Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 #include "JNIUtils.h"
+
+#include "Utf.h"
 
 #include <stdexcept>
 #include <vector>
@@ -50,11 +41,10 @@ static void Utf32toUtf16(const uint32_t* utf32, size_t length, std::vector<uint1
 
 jstring C2JString(JNIEnv* env, const std::wstring& str)
 {
-	if (env->ExceptionCheck()) {
+	if (env->ExceptionCheck())
 		return 0;
-	}
 
-	if (sizeof(wchar_t) == 2) {
+	if constexpr (sizeof(wchar_t) == 2) {
 		return env->NewString((const jchar*)str.data(), str.size());
 	} else {
 		std::vector<uint16_t> buffer;
@@ -65,7 +55,7 @@ jstring C2JString(JNIEnv* env, const std::wstring& str)
 
 jstring C2JString(JNIEnv* env, const std::string& str)
 {
-	return C2JString(env, std::wstring(str.begin(), str.end()));
+	return C2JString(env, ZXing::FromUtf8(str));
 }
 
 std::string J2CString(JNIEnv* env, jstring str)
