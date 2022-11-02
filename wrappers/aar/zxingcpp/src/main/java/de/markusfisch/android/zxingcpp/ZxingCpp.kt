@@ -201,7 +201,7 @@ object ZxingCpp {
 		height: Int = 0,
 		margin: Int = -1,
 		ecLevel: Int = -1,
-		encoding: String = "UTF8",
+		encoding: String = "UTF-8",
 		setColor: Int = 0xff000000.toInt(),
 		unsetColor: Int = 0xffffffff.toInt()
 	): Bitmap {
@@ -234,7 +234,7 @@ object ZxingCpp {
 		format: Format,
 		margin: Int = -1,
 		ecLevel: Int = -1,
-		encoding: String = "UTF8"
+		encoding: String = "UTF-8"
 	): String {
 		val bitMatrix = encode(
 			text, format.toString(),
@@ -266,7 +266,7 @@ xmlns="http://www.w3.org/2000/svg">
 		format: Format,
 		margin: Int = -1,
 		ecLevel: Int = -1,
-		encoding: String = "UTF8",
+		encoding: String = "UTF-8",
 		inverted: Boolean = false
 	): String {
 		val bitMatrix = encode(
@@ -297,7 +297,7 @@ xmlns="http://www.w3.org/2000/svg">
 		height: Int = 0,
 		margin: Int = -1,
 		ecLevel: Int = -1,
-		encoding: String = "UTF8"
+		encoding: String = "UTF-8"
 	): BitMatrix
 
 	init {
