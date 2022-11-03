@@ -350,15 +350,15 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readBitmap(
 extern "C" JNIEXPORT jobject JNICALL
 Java_de_markusfisch_android_zxingcpp_ZxingCpp_encode(
 	JNIEnv* env, jobject, jstring text, jstring format,
-	jint width, jint height, jint margin, jint eccLevel, jstring encoding)
+	jint width, jint height, jint margin, jint eccLevel)
 {
 	try {
 		auto writer = MultiFormatWriter(BarcodeFormatFromString(J2CString(env, format)))
-			.setEncoding(CharacterSetFromString(J2CString(env, encoding).c_str()))
+			.setEncoding(CharacterSet::UTF8)
 			.setMargin(margin)
 			.setEccLevel(eccLevel);
 		auto matrix = ToMatrix<uint8_t>(writer.encode(
-			FromUtf8(J2CString(env, text)), width, height));
+			J2CString(env, text), width, height));
 		return CreateBitMatrix(env, matrix);
 	} catch (const std::exception& e) {
 		ThrowJavaException(env, e.what());
