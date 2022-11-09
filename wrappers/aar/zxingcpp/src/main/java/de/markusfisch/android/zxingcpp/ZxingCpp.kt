@@ -274,15 +274,26 @@ xmlns="http://www.w3.org/2000/svg">
 		val w = bitMatrix.width
 		val h = bitMatrix.height
 		val sb = StringBuilder()
-		val map = if (inverted) "█▄▀ " else " ▀▄█"
 		fun Boolean.toInt() = if (this) 1 else 0
-		for (y in 0 until h step 2) {
-			for (x in 0 until w) {
-				val tp = bitMatrix.get(y, x).toInt()
-				val bt = (y + 1 < h && bitMatrix.get(y + 1, x)).toInt()
-				sb.append(map[tp or (bt shl 1)])
+		if (h == 1) {
+			val map = if (inverted) "█ " else " █"
+			for (y in 0 until h) {
+				for (x in 0 until w) {
+					sb.append(map[bitMatrix.get(x, y).toInt()])
+				}
+				sb.append('\n')
 			}
-			sb.append('\n')
+
+		} else {
+			val map = if (inverted) "█▄▀ " else " ▀▄█"
+			for (y in 0 until h step 2) {
+				for (x in 0 until w) {
+					val tp = bitMatrix.get(x, y).toInt()
+					val bt = (y + 1 < h && bitMatrix.get(x, y + 1)).toInt()
+					sb.append(map[tp or (bt shl 1)])
+				}
+				sb.append('\n')
+			}
 		}
 		return sb.toString()
 	}
