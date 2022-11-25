@@ -204,7 +204,18 @@ static std::vector<ConcentricPattern> FindFinderPatterns(const BitMatrix& image,
 			PointF p(next.pixelsInFront() + next[0] + next[1] + next[2] + next[3] / 2.0, y + 0.5);
 
 			// make sure p is not 'inside' an already found pattern area
-			if (FindIf(res, [p](const auto& old) { return distance(p, old) < old.size / 2; }) == res.end()) {
+			bool found = false;
+			for (auto old = res.rbegin(); old != res.rend(); ++old) {
+				// search from back to front, stop once we are out of range due to the y-coordinate
+				if (p.y - old->y > old->size / 2)
+					break;
+				if (distance(p, *old) < old->size / 2) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
 				++N;
 				log(p, 1);
 
@@ -252,7 +263,7 @@ static uint32_t SampleOrientationBits(const BitMatrix& image, const PerspectiveT
 		for (auto ps : {cornerL, corner, cornerR}) {
 			auto p = mod2Pix(PointF(ps));
 			if (!image.isIn(p))
-				return -1;
+				return 0;
 			log(p);
 			AppendBit(bits, image.get(p));
 		}
@@ -342,11 +353,13 @@ DetectorResults Detect(const BitMatrix& image, bool isPure, bool tryHarder, int 
 
 		auto srcQuad = CenteredSquare(7);
 		auto mod2Pix = PerspectiveTransform(srcQuad, *fpQuad);
+		if (!mod2Pix.isValid())
+			continue;
 
 		int radius; // 5 or 7 (compact vs. full)
 		int mirror; // 0 or 1
 		int rotate; // [0..3]
-		int modeMessage;
+		int modeMessage = -1;
 		[&]() {
 			// 24778:2008(E) 14.3.3 reads:
 			// In the outer layer of the Core Symbol, the 12 orientation bits at the corners are bitwise compared against the specified
@@ -358,9 +371,10 @@ DetectorResults Detect(const BitMatrix& image, bool isPure, bool tryHarder, int 
 			// have a hamming distance of 2, meaning only 1 bit errors can be relyable recovered from. The following code therefore
 			// incorporates the complete set of mode message bits to help determine the orientation of the symbol. This is still not
 			// sufficient for the ErrorInModeMessageZero test case in AZDecoderTest.cpp but good enough for the author.
-			for (radius = 5; radius <= 7; radius += 2)
-			{
+			for (radius = 5; radius <= 7; radius += 2) {
 				uint32_t bits = SampleOrientationBits(image, mod2Pix, radius);
+				if (bits == 0)
+					continue;
 				for (mirror = 0; mirror <= 1; ++mirror) {
 					rotate = FindRotation(bits, mirror);
 					if (rotate == -1)
@@ -379,12 +393,13 @@ DetectorResults Detect(const BitMatrix& image, bool isPure, bool tryHarder, int 
 		// improve prescision of sample grid by extrapolating from outer square of white pixels (5 edges away from center)
 		if (radius == 7) {
 			if (auto fpQuad5 = FindConcentricPatternCorners(image, fp, fp.size * 5 / 3, 5)) {
-				auto mod2Pix = PerspectiveTransform(CenteredSquare(11), *fpQuad5);
-				int rotate5 = FindRotation(SampleOrientationBits(image, mod2Pix, radius), mirror);
-				if (rotate5 != -1) {
-					srcQuad = CenteredSquare(11);
-					fpQuad = fpQuad5;
-					rotate = rotate5;
+				if (auto mod2Pix = PerspectiveTransform(CenteredSquare(11), *fpQuad5); mod2Pix.isValid()) {
+					int rotate5 = FindRotation(SampleOrientationBits(image, mod2Pix, radius), mirror);
+					if (rotate5 != -1) {
+						srcQuad = CenteredSquare(11);
+						fpQuad = fpQuad5;
+						rotate = rotate5;
+					}
 				}
 			}
 		}
