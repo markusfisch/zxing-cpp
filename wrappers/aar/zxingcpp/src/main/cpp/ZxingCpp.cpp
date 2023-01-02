@@ -201,7 +201,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"Ljava/lang/String;"
 		"Z"
 		"I"
-		"I"
+		"Ljava/lang/String;"
 		"Lde/markusfisch/android/zxingcpp/ZxingCpp$GTIN;)V");
 	return env->NewObject(
 		cls, constructor,
@@ -218,7 +218,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		C2JString(env, result.sequenceId()),
 		result.readerInit(),
 		result.lineCount(),
-		result.versionNumber(),
+		C2JString(env, result.version()),
 		CreateOptionalGTIN(env, result));
 }
 

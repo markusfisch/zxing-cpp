@@ -77,7 +77,7 @@ object ZxingCpp {
 		val sequenceId: String,
 		val readerInit: Boolean,
 		val lineCount: Int,
-		val versionNumber: Int,
+		val version: String,
 		val gtin: GTIN?
 	)
 
