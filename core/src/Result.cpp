@@ -22,8 +22,6 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 	  _error(error),
 	  _position(Line(y, xStart, xStop)),
 	  _format(format),
-	  _lineCount(0),
-	  _versionNumber(0),
 	  _readerInit(readerInit)
 {}
 
@@ -31,14 +29,16 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	: _content(std::move(decodeResult).content()),
 	  _error(std::move(decodeResult).error()),
 	  _position(std::move(position)),
-	  _ecLevel(decodeResult.ecLevel()),
 	  _sai(decodeResult.structuredAppend()),
 	  _format(format),
 	  _lineCount(decodeResult.lineCount()),
-	  _versionNumber(decodeResult.versionNumber()),
 	  _isMirrored(decodeResult.isMirrored()),
 	  _readerInit(decodeResult.readerInit())
 {
+	if (decodeResult.versionNumber())
+		snprintf(_version, 4, "%d", decodeResult.versionNumber());
+	snprintf(_ecLevel, 4, "%s", decodeResult.ecLevel().data());
+
 	// TODO: add type opaque and code specific 'extra data'? (see DecoderResult::extra())
 }
 
@@ -62,14 +62,14 @@ std::string Result::text(TextMode mode) const
 	return _content.text(mode);
 }
 
-std::string Result::utf8() const
+std::string Result::text() const
 {
-	return _content.utf8();
+	return text(_decodeHints.textMode());
 }
 
-std::wstring Result::utfW() const
+std::string Result::ecLevel() const
 {
-	return _content.utfW();
+	return _ecLevel;
 }
 
 ContentType Result::contentType() const
@@ -106,6 +106,11 @@ int Result::sequenceIndex() const
 std::string Result::sequenceId() const
 {
 	return _sai.id;
+}
+
+std::string Result::version() const
+{
+	return _version;
 }
 
 Result& Result::setDecodeHints(DecodeHints hints)
