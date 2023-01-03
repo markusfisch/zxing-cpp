@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(ZXingPython)
 
 set (pybind11_git_repo https://github.com/pybind/pybind11.git)
-set (pybind11_git_rev v2.10.0)
+set (pybind11_git_rev v2.10.2)
 
 # check if we are called from the top-level ZXing project
 get_directory_property(hasParent PARENT_DIRECTORY)
@@ -66,3 +66,9 @@ if (BUILD_READERS AND BUILD_WRITERS)
     add_test(NAME PythonTest COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test.py -v)
     set_property(TEST PythonTest PROPERTY ENVIRONMENT PYTHONPATH=$<TARGET_FILE_DIR:zxingcpp>)
 endif()
+
+install(TARGETS zxingcpp
+    COMPONENT python
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")

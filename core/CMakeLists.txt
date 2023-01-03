@@ -1,4 +1,7 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.14)
+
+project (ZXing VERSION "2.0.0")
+set (ZXING_SONAME 3) # see https://github.com/zxing-cpp/zxing-cpp/issues/333
 
 include(../zxing.cmake)
 if (BUILD_SHARED_LIBS)
@@ -469,7 +472,7 @@ set_target_properties(ZXing PROPERTIES EXPORT_NAME ZXing)
 set_target_properties(ZXing PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if (PROJECT_VERSION)
     set_target_properties(ZXing PROPERTIES VERSION ${PROJECT_VERSION})
-    set_target_properties(ZXing PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
+    set_target_properties(ZXing PROPERTIES SOVERSION ${ZXING_SONAME})
 endif()
 
 set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
@@ -521,3 +524,36 @@ if(MSVC)
             CONFIGURATIONS Debug RelWithDebInfo 
             OPTIONAL)
 endif()
+
+set (CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/ZXing")
+
+install (
+    EXPORT ZXingTargets
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR} NAMESPACE ZXing::
+)
+
+IF (NOT WIN32 OR MINGW)
+    configure_file(zxing.pc.in zxing.pc @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/zxing.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+ENDIF()
+
+include (CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/ZXingConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file (
+    ZXingConfig.cmake.in
+    ZXingConfig.cmake
+    INSTALL_DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+)
+
+install (
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/ZXingConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/ZXingConfigVersion.cmake"
+    DESTINATION ${CMAKECONFIG_INSTALL_DIR}
+)
