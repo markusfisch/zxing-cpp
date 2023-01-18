@@ -69,6 +69,51 @@ static const char* JavaContentTypeName(ContentType contentType)
 	}
 }
 
+static EanAddOnSymbol EanAddOnSymbolFromString(const std::string& name)
+{
+	if (name == "Ignore") {
+		return EanAddOnSymbol::Ignore;
+	} else if (name == "Read") {
+		return EanAddOnSymbol::Read;
+	} else if (name == "Require") {
+		return EanAddOnSymbol::Require;
+	} else {
+		throw std::invalid_argument("Invalid eanAddOnSymbol name");
+	}
+}
+
+static Binarizer BinarizerFromString(const std::string& name)
+{
+	if (name == "LocalAverage") {
+		return Binarizer::LocalAverage;
+	} else if (name == "GlobalHistogram") {
+		return Binarizer::GlobalHistogram;
+	} else if (name == "FixedThreshold") {
+		return Binarizer::FixedThreshold;
+	} else if (name == "BoolCast") {
+		return Binarizer::BoolCast;
+	} else {
+		throw std::invalid_argument("Invalid binarizer name");
+	}
+}
+
+static TextMode TextModeFromString(const std::string& name)
+{
+	if (name == "Plain") {
+		return TextMode::Plain;
+	} else if (name == "ECI") {
+		return TextMode::ECI;
+	} else if (name == "HRI") {
+		return TextMode::HRI;
+	} else if (name == "Hex") {
+		return TextMode::Hex;
+	} else if (name == "Escaped") {
+		return TextMode::Escaped;
+	} else {
+		throw std::invalid_argument("Invalid textMode name");
+	}
+}
+
 static jobject ThrowJavaException(JNIEnv* env, const char* message)
 {
 	jclass jcls = env->FindClass("java/lang/RuntimeException");
@@ -76,7 +121,8 @@ static jobject ThrowJavaException(JNIEnv* env, const char* message)
 	return nullptr;
 }
 
-static jbyteArray CreateByteArray(JNIEnv* env, const void* data, unsigned int length)
+static jbyteArray CreateByteArray(JNIEnv* env, const void* data,
+	unsigned int length)
 {
 	auto size = static_cast<jsize>(length);
 	jbyteArray byteArray = env->NewByteArray(size);
@@ -85,13 +131,15 @@ static jbyteArray CreateByteArray(JNIEnv* env, const void* data, unsigned int le
 	return byteArray;
 }
 
-static jbyteArray CreateByteArray(JNIEnv* env, const std::vector<uint8_t>& byteArray)
+static jbyteArray CreateByteArray(JNIEnv* env,
+	const std::vector<uint8_t>& byteArray)
 {
 	return CreateByteArray(env, reinterpret_cast<const void*>(byteArray.data()),
 		byteArray.size());
 }
 
-static jobject CreateBitMatrix(JNIEnv* env, int width, int height, jbyteArray data)
+static jobject CreateBitMatrix(JNIEnv* env, int width, int height,
+	jbyteArray data)
 {
 	jclass cls = env->FindClass("de/markusfisch/android/zxingcpp/ZxingCpp$BitMatrix");
 	auto constructor = env->GetMethodID(
@@ -222,17 +270,10 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		CreateOptionalGTIN(env, result));
 }
 
-static jobject Read(JNIEnv* env, ImageView image, jstring formats,
-	jboolean tryHarder, jboolean tryRotate, jboolean tryInvert, jboolean tryDownscale)
+static jobject Read(JNIEnv* env, ImageView image, DecodeHints decodeHints)
 {
 	try {
-		auto hints = DecodeHints()
-			.setFormats(BarcodeFormatsFromString(J2CString(env, formats)))
-			.setTryHarder(tryHarder)
-			.setTryRotate(tryRotate)
-			.setTryInvert(tryInvert)
-			.setTryDownscale(tryDownscale);
-		auto result = ReadBarcode(image, hints);
+		auto result = ReadBarcode(image, decodeHints);
 		if (result.isValid()) {
 			// Only allocate Result when ReadBarcode() found something.
 			return CreateResult(env, result);
@@ -246,12 +287,73 @@ static jobject Read(JNIEnv* env, ImageView image, jstring formats,
 	}
 }
 
+static bool GetBooleanField(JNIEnv* env, jclass cls, jobject hints,
+	const char* name)
+{
+	return env->GetBooleanField(hints, env->GetFieldID(cls, name, "Z"));
+}
+
+static int GetIntField(JNIEnv* env, jclass cls, jobject hints,
+	const char* name)
+{
+	return env->GetIntField(hints, env->GetFieldID(cls, name, "I"));
+}
+
+static std::string GetStringField(JNIEnv* env, jclass cls, jobject hints,
+	const char* name)
+{
+	jfieldID fid = env->GetFieldID(cls, name, "Ljava/lang/String;");
+	auto str = (jstring) env->GetObjectField(hints, fid);
+	return J2CString(env, str);
+}
+
+static std::string GetEnumField(JNIEnv* env, jclass hintClass, jobject hints,
+	const char* enumClass, const char* name)
+{
+	jclass cls = env->FindClass(enumClass);
+	jstring s = (jstring) env->CallObjectMethod(
+		env->GetObjectField(hints, env->GetFieldID(hintClass, name,
+			("L" + std::string(enumClass) + ";").c_str())),
+		env->GetMethodID(cls, "name", "()Ljava/lang/String;"));
+	return J2CString(env, s);
+}
+
+static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
+{
+	jclass cls = env->GetObjectClass(hints);
+	return DecodeHints()
+		.setTryHarder(GetBooleanField(env, cls, hints, "tryHarder"))
+		.setTryRotate(GetBooleanField(env, cls, hints, "tryRotate"))
+		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
+		.setTryDownscale(GetBooleanField(env, cls, hints, "tryDownscale"))
+		.setIsPure(GetBooleanField(env, cls, hints, "isPure"))
+		.setTryCode39ExtendedMode(GetBooleanField(env, cls, hints, "tryCode39ExtendedMode"))
+		.setValidateCode39CheckSum(GetBooleanField(env, cls, hints, "validateCode39CheckSum"))
+		.setValidateITFCheckSum(GetBooleanField(env, cls, hints, "validateITFCheckSum"))
+		.setReturnCodabarStartEnd(GetBooleanField(env, cls, hints, "returnCodabarStartEnd"))
+		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
+		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
+		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints,
+			"de/markusfisch/android/zxingcpp/ZxingCpp$EanAddOnSymbol",
+			"eanAddOnSymbol")))
+		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints,
+			"de/markusfisch/android/zxingcpp/ZxingCpp$Binarizer",
+			"binarizer")))
+		.setTextMode(TextModeFromString(GetEnumField(env, cls, hints,
+			"de/markusfisch/android/zxingcpp/ZxingCpp$TextMode",
+			"textMode")))
+		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
+		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
+		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"))
+		.setFormats(BarcodeFormatsFromString(
+			GetStringField(env, cls, hints, "formats")));
+}
+
 extern "C" JNIEXPORT jobject JNICALL
 Java_de_markusfisch_android_zxingcpp_ZxingCpp_readYBuffer(
 	JNIEnv* env, jobject, jobject yBuffer, jint rowStride,
 	jint left, jint top, jint width, jint height, jint rotation,
-	jstring formats,
-	jboolean tryHarder, jboolean tryRotate, jboolean tryInvert, jboolean tryDownscale)
+	jobject hints)
 {
 	const uint8_t* pixels = static_cast<uint8_t*>(
 		env->GetDirectBufferAddress(yBuffer));
@@ -264,15 +366,14 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readYBuffer(
 		rowStride
 	}.rotated(rotation);
 
-	return Read(env, image, formats, tryHarder, tryRotate, tryInvert, tryDownscale);
+	return Read(env, image, CreateDecodeHints(env, hints));
 }
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_de_markusfisch_android_zxingcpp_ZxingCpp_readByteArray(
 	JNIEnv* env, jobject, jbyteArray yuvData, jint rowStride,
 	jint left, jint top, jint width, jint height, jint rotation,
-	jstring formats,
-	jboolean tryHarder, jboolean tryRotate, jboolean tryInvert, jboolean tryDownscale)
+	jobject hints)
 {
 	auto *pixels = env->GetByteArrayElements(yuvData, nullptr);
 
@@ -284,7 +385,7 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readByteArray(
 		rowStride
 	}.rotated(rotation);
 
-	auto result = Read(env, image, formats, tryHarder, tryRotate, tryInvert, tryDownscale);
+	auto result = Read(env, image, CreateDecodeHints(env, hints));
 	env->ReleaseByteArrayElements(yuvData, pixels, 0);
 
 	return result;
@@ -317,8 +418,7 @@ extern "C" JNIEXPORT jobject JNICALL
 Java_de_markusfisch_android_zxingcpp_ZxingCpp_readBitmap(
 	JNIEnv* env, jobject, jobject bitmap,
 	jint left, jint top, jint width, jint height, jint rotation,
-	jstring formats,
-	jboolean tryHarder, jboolean tryRotate, jboolean tryInvert, jboolean tryDownscale)
+	jobject hints)
 {
 	AndroidBitmapInfo bmInfo;
 	AndroidBitmap_getInfo(env, bitmap, &bmInfo);
@@ -344,7 +444,7 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readBitmap(
 		(int)bmInfo.stride
 	}.cropped(left, top, width, height).rotated(rotation);
 
-	return Read(env, image, formats, tryHarder, tryRotate, tryInvert, tryDownscale);
+	return Read(env, image, CreateDecodeHints(env, hints));
 }
 
 extern "C" JNIEXPORT jobject JNICALL

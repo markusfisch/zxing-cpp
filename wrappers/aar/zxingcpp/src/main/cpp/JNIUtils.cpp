@@ -41,8 +41,9 @@ static void Utf32toUtf16(const uint32_t* utf32, size_t length, std::vector<uint1
 
 jstring C2JString(JNIEnv* env, const std::wstring& str)
 {
-	if (env->ExceptionCheck())
-		return 0;
+	if (env->ExceptionCheck()) {
+		return nullptr;
+	}
 
 	if constexpr (sizeof(wchar_t) == 2) {
 		return env->NewString((const jchar*)str.data(), str.size());
@@ -64,7 +65,7 @@ std::string J2CString(JNIEnv* env, jstring str)
 	if (len < 1) {
 		return "";
 	}
-	const char* utfString = env->GetStringUTFChars(str, NULL);
+	const char* utfString = env->GetStringUTFChars(str, nullptr);
 	std::string s(utfString, len);
 	env->ReleaseStringUTFChars(str, utfString);
 	return s;

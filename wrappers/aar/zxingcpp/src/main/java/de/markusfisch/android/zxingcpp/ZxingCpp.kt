@@ -22,8 +22,23 @@ import android.graphics.Rect
 import java.nio.ByteBuffer
 
 object ZxingCpp {
-	// Enumerates barcode formats known to this package.
-	// Note that this has to be kept synchronized with native (C++/JNI) side.
+	// These enums have to be kept in sync with the native (C++/JNI) side.
+	enum class ContentType {
+		Text, Binary, Mixed, GS1, ISO15434, UnknownECI
+	}
+
+	enum class Binarizer {
+		LocalAverage, GlobalHistogram, FixedThreshold, BoolCast
+	}
+
+	enum class EanAddOnSymbol {
+		Ignore, Read, Require
+	}
+
+	enum class TextMode {
+		Plain, ECI, HRI, Hex, Escaped
+	}
+
 	enum class Format {
 		None,
 		Aztec,
@@ -44,9 +59,27 @@ object ZxingCpp {
 		UPCA,
 		UPCE,
 	}
-	enum class ContentType {
-		Text, Binary, Mixed, GS1, ISO15434, UnknownECI
-	}
+
+	data class DecodeHints(
+		var tryHarder: Boolean = true,
+		var tryRotate: Boolean = true,
+		var tryInvert: Boolean = true,
+		var tryDownscale: Boolean = true,
+		var isPure: Boolean = false,
+		var tryCode39ExtendedMode: Boolean = false,
+		var validateCode39CheckSum: Boolean = false,
+		var validateITFCheckSum: Boolean = false,
+		var returnCodabarStartEnd: Boolean = false,
+		var returnErrors: Boolean = false,
+		var downscaleFactor: Int = 3,
+		var eanAddOnSymbol: EanAddOnSymbol = EanAddOnSymbol.Ignore,
+		var binarizer: Binarizer = Binarizer.LocalAverage,
+		var textMode: TextMode = TextMode.HRI,
+		var minLineCount: Int = 2,
+		var maxNumberOfSymbols: Int = 0xff,
+		var downscaleThreshold: Int = 500,
+		var formats: String = ""
+	)
 
 	data class Position(
 		val topLeft: Point,
@@ -86,22 +119,14 @@ object ZxingCpp {
 		rowStride: Int,
 		cropRect: Rect,
 		rotation: Int = 0,
-		formats: Set<Format> = setOf(),
-		tryHarder: Boolean = false,
-		tryRotate: Boolean = false,
-		tryInvert: Boolean = false,
-		tryDownscale: Boolean = false
+		decodeHints: DecodeHints = DecodeHints(),
 	): Result? = readYBuffer(
 		yBuffer,
 		rowStride,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
 		rotation,
-		formats.joinToString(),
-		tryHarder,
-		tryRotate,
-		tryInvert,
-		tryDownscale
+		decodeHints,
 	)
 
 	external fun readYBuffer(
@@ -109,12 +134,8 @@ object ZxingCpp {
 		rowStride: Int,
 		left: Int, top: Int,
 		width: Int, height: Int,
-		rotation: Int = 0,
-		formats: String = "",
-		tryHarder: Boolean = false,
-		tryRotate: Boolean = false,
-		tryInvert: Boolean = false,
-		tryDownscale: Boolean = false
+		rotation: Int,
+		decodeHints: DecodeHints,
 	): Result?
 
 	fun readByteArray(
@@ -122,22 +143,14 @@ object ZxingCpp {
 		rowStride: Int,
 		cropRect: Rect,
 		rotation: Int = 0,
-		formats: Set<Format> = setOf(),
-		tryHarder: Boolean = false,
-		tryRotate: Boolean = false,
-		tryInvert: Boolean = false,
-		tryDownscale: Boolean = false
+		decodeHints: DecodeHints = DecodeHints(),
 	): Result? = readByteArray(
 		yuvData,
 		rowStride,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
 		rotation,
-		formats.joinToString(),
-		tryHarder,
-		tryRotate,
-		tryInvert,
-		tryDownscale
+		decodeHints,
 	)
 
 	external fun readByteArray(
@@ -145,45 +158,29 @@ object ZxingCpp {
 		rowStride: Int,
 		left: Int, top: Int,
 		width: Int, height: Int,
-		rotation: Int = 0,
-		formats: String = "",
-		tryHarder: Boolean = false,
-		tryRotate: Boolean = false,
-		tryInvert: Boolean = false,
-		tryDownscale: Boolean = false
+		rotation: Int,
+		decodeHints: DecodeHints,
 	): Result?
 
 	fun readBitmap(
 		bitmap: Bitmap,
 		cropRect: Rect,
 		rotation: Int = 0,
-		formats: Set<Format> = setOf(),
-		tryHarder: Boolean = false,
-		tryRotate: Boolean = false,
-		tryInvert: Boolean = false,
-		tryDownscale: Boolean = false
+		decodeHints: DecodeHints = DecodeHints(),
 	): Result? = readBitmap(
 		bitmap,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
 		rotation,
-		formats.joinToString(),
-		tryHarder,
-		tryRotate,
-		tryInvert,
-		tryDownscale
+		decodeHints,
 	)
 
 	external fun readBitmap(
 		bitmap: Bitmap,
 		left: Int, top: Int,
 		width: Int, height: Int,
-		rotation: Int = 0,
-		formats: String = "",
-		tryHarder: Boolean = false,
-		tryRotate: Boolean = false,
-		tryInvert: Boolean = false,
-		tryDownscale: Boolean = false
+		rotation: Int,
+		decodeHints: DecodeHints,
 	): Result?
 
 	data class BitMatrix(

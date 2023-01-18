@@ -37,6 +37,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import de.markusfisch.android.zxingcpp.ZxingCpp
+import de.markusfisch.android.zxingcpp.ZxingCpp.DecodeHints
 import de.markusfisch.android.zxingcpp.ZxingCpp.Format
 import java.util.concurrent.Executors
 
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 	private val executor = Executors.newSingleThreadExecutor()
 	private val permissions = listOf(Manifest.permission.CAMERA)
 	private val beeper = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 50)
+	private val decodeHints = DecodeHints()
 
 	private lateinit var viewFinder: PreviewView
 	private lateinit var overlayView: OverlayView
@@ -235,20 +237,23 @@ class MainActivity : AppCompatActivity() {
 
 	private fun scanCpp(image: ImageProxy, cropRect: Rect): String = try {
 		val yPlane = image.planes[0]
+		decodeHints.apply {
+			tryHarder = chipTryHarder.isChecked
+			tryRotate = chipTryRotate.isChecked
+			tryInvert = chipTryInvert.isChecked
+			tryDownscale = chipTryDownscale.isChecked
+			formats = if (chipQrCode.isChecked) {
+				setOf(Format.QRCode)
+			} else {
+				setOf()
+			}.joinToString()
+		}
 		ZxingCpp.readYBuffer(
 			yPlane.buffer,
 			yPlane.rowStride,
 			cropRect,
 			image.imageInfo.rotationDegrees,
-			if (chipQrCode.isChecked) {
-				setOf(Format.QRCode)
-			} else {
-				setOf()
-			},
-			chipTryHarder.isChecked,
-			chipTryRotate.isChecked,
-			chipTryInvert.isChecked,
-			chipTryDownscale.isChecked
+			decodeHints
 		)?.let {
 			overlayView.show(it.position)
 			"${it.format}: ${it.text}"
