@@ -241,7 +241,7 @@ class MainActivity : AppCompatActivity() {
 			cropRect,
 			image.imageInfo.rotationDegrees,
 			if (chipQrCode.isChecked) {
-				setOf(Format.QR_CODE)
+				setOf(Format.QRCode)
 			} else {
 				setOf()
 			},
