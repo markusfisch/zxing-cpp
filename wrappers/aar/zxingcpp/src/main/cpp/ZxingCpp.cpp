@@ -31,51 +31,49 @@ using namespace ZXing;
 
 static const char* JavaBarcodeFormatName(BarcodeFormat format)
 {
-	// These have to be the names of the enum constants in the kotlin code.
 	switch (format) {
-	case BarcodeFormat::None: return "None";
-	case BarcodeFormat::Aztec: return "Aztec";
-	case BarcodeFormat::Codabar: return "Codabar";
-	case BarcodeFormat::Code39: return "Code39";
-	case BarcodeFormat::Code93: return "Code93";
-	case BarcodeFormat::Code128: return "Code128";
-	case BarcodeFormat::DataMatrix: return "DataMatrix";
-	case BarcodeFormat::EAN8: return "EAN8";
-	case BarcodeFormat::EAN13: return "EAN13";
+	case BarcodeFormat::None: return "NONE";
+	case BarcodeFormat::Aztec: return "AZTEC";
+	case BarcodeFormat::Codabar: return "CODABAR";
+	case BarcodeFormat::Code39: return "CODE_39";
+	case BarcodeFormat::Code93: return "CODE_93";
+	case BarcodeFormat::Code128: return "CODE_128";
+	case BarcodeFormat::DataMatrix: return "DATA_MATRIX";
+	case BarcodeFormat::EAN8: return "EAN_8";
+	case BarcodeFormat::EAN13: return "EAN_13";
 	case BarcodeFormat::ITF: return "ITF";
-	case BarcodeFormat::MaxiCode: return "MaxiCode";
-	case BarcodeFormat::PDF417: return "PDF417";
-	case BarcodeFormat::QRCode: return "QRCode";
-	case BarcodeFormat::MicroQRCode: return "MicroQRCode";
-	case BarcodeFormat::DataBar: return "DataBar";
-	case BarcodeFormat::DataBarExpanded: return "DataBarExpanded";
-	case BarcodeFormat::UPCA: return "UPCA";
-	case BarcodeFormat::UPCE: return "UPCE";
+	case BarcodeFormat::MaxiCode: return "MAXICODE";
+	case BarcodeFormat::PDF417: return "PDF_417";
+	case BarcodeFormat::QRCode: return "QR_CODE";
+	case BarcodeFormat::MicroQRCode: return "MICRO_QR_CODE";
+	case BarcodeFormat::DataBar: return "DATA_BAR";
+	case BarcodeFormat::DataBarExpanded: return "DATA_BAR_EXPANDED";
+	case BarcodeFormat::UPCA: return "UPC_A";
+	case BarcodeFormat::UPCE: return "UPC_E";
 	default: throw std::invalid_argument("Invalid format");
 	}
 }
 
 static const char* JavaContentTypeName(ContentType contentType)
 {
-	// These have to be the names of the enum constants in the kotlin code.
 	switch (contentType) {
-	case ContentType::Text: return "Text";
-	case ContentType::Binary: return "Binary";
-	case ContentType::Mixed: return "Mixed";
+	case ContentType::Text: return "TEXT";
+	case ContentType::Binary: return "BINARY";
+	case ContentType::Mixed: return "MIXED";
 	case ContentType::GS1: return "GS1";
 	case ContentType::ISO15434: return "ISO15434";
-	case ContentType::UnknownECI: return "UnknownECI";
+	case ContentType::UnknownECI: return "UNKNOWN_ECI";
 	default: throw std::invalid_argument("Invalid contentType");
 	}
 }
 
 static EanAddOnSymbol EanAddOnSymbolFromString(const std::string& name)
 {
-	if (name == "Ignore") {
+	if (name == "IGNORE") {
 		return EanAddOnSymbol::Ignore;
-	} else if (name == "Read") {
+	} else if (name == "READ") {
 		return EanAddOnSymbol::Read;
-	} else if (name == "Require") {
+	} else if (name == "REQUIRE") {
 		return EanAddOnSymbol::Require;
 	} else {
 		throw std::invalid_argument("Invalid eanAddOnSymbol name");
@@ -84,13 +82,13 @@ static EanAddOnSymbol EanAddOnSymbolFromString(const std::string& name)
 
 static Binarizer BinarizerFromString(const std::string& name)
 {
-	if (name == "LocalAverage") {
+	if (name == "LOCAL_AVERAGE") {
 		return Binarizer::LocalAverage;
-	} else if (name == "GlobalHistogram") {
+	} else if (name == "GLOBAL_HISTOGRAM") {
 		return Binarizer::GlobalHistogram;
-	} else if (name == "FixedThreshold") {
+	} else if (name == "FIXED_THRESHOLD") {
 		return Binarizer::FixedThreshold;
-	} else if (name == "BoolCast") {
+	} else if (name == "BOOL_CAST") {
 		return Binarizer::BoolCast;
 	} else {
 		throw std::invalid_argument("Invalid binarizer name");
@@ -99,15 +97,15 @@ static Binarizer BinarizerFromString(const std::string& name)
 
 static TextMode TextModeFromString(const std::string& name)
 {
-	if (name == "Plain") {
+	if (name == "PLAIN") {
 		return TextMode::Plain;
 	} else if (name == "ECI") {
 		return TextMode::ECI;
 	} else if (name == "HRI") {
 		return TextMode::HRI;
-	} else if (name == "Hex") {
+	} else if (name == "HEX") {
 		return TextMode::Hex;
-	} else if (name == "Escaped") {
+	} else if (name == "ESCAPED") {
 		return TextMode::Escaped;
 	} else {
 		throw std::invalid_argument("Invalid textMode name");

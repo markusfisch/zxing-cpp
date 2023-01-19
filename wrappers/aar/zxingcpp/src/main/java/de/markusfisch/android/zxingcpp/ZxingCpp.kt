@@ -24,40 +24,40 @@ import java.nio.ByteBuffer
 object ZxingCpp {
 	// These enums have to be kept in sync with the native (C++/JNI) side.
 	enum class ContentType {
-		Text, Binary, Mixed, GS1, ISO15434, UnknownECI
+		TEXT, BINARY, MIXED, GS1, ISO15434, UNKNOWN_ECI
 	}
 
 	enum class Binarizer {
-		LocalAverage, GlobalHistogram, FixedThreshold, BoolCast
+		LOCAL_AVERAGE, GLOBAL_HISTOGRAM, FIXED_THRESHOLD, BOOL_CAST
 	}
 
 	enum class EanAddOnSymbol {
-		Ignore, Read, Require
+		IGNORE, READ, REQUIRE
 	}
 
 	enum class TextMode {
-		Plain, ECI, HRI, Hex, Escaped
+		PLAIN, ECI, HRI, HEX, ESCAPED
 	}
 
 	enum class Format {
-		None,
-		Aztec,
-		Codabar,
-		Code39,
-		Code93,
-		Code128,
-		DataBar,
-		DataBarExpanded,
-		DataMatrix,
-		EAN8,
-		EAN13,
+		NONE,
+		AZTEC,
+		CODABAR,
+		CODE_39,
+		CODE_93,
+		CODE_128,
+		DATA_BAR,
+		DATA_BAR_EXPANDED,
+		DATA_MATRIX,
+		EAN_8,
+		EAN_13,
 		ITF,
-		MaxiCode,
-		PDF417,
-		QRCode,
-		MicroQRCode,
-		UPCA,
-		UPCE,
+		MAXICODE,
+		PDF_417,
+		QR_CODE,
+		MICRO_QR_CODE,
+		UPC_A,
+		UPC_E,
 	}
 
 	data class DecodeHints(
@@ -72,8 +72,8 @@ object ZxingCpp {
 		var returnCodabarStartEnd: Boolean = false,
 		var returnErrors: Boolean = false,
 		var downscaleFactor: Int = 3,
-		var eanAddOnSymbol: EanAddOnSymbol = EanAddOnSymbol.Ignore,
-		var binarizer: Binarizer = Binarizer.LocalAverage,
+		var eanAddOnSymbol: EanAddOnSymbol = EanAddOnSymbol.IGNORE,
+		var binarizer: Binarizer = Binarizer.LOCAL_AVERAGE,
 		var textMode: TextMode = TextMode.HRI,
 		var minLineCount: Int = 2,
 		var maxNumberOfSymbols: Int = 0xff,

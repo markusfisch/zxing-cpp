@@ -243,7 +243,7 @@ class MainActivity : AppCompatActivity() {
 			tryInvert = chipTryInvert.isChecked
 			tryDownscale = chipTryDownscale.isChecked
 			formats = if (chipQrCode.isChecked) {
-				setOf(Format.QRCode)
+				setOf(Format.QR_CODE)
 			} else {
 				setOf()
 			}.joinToString()
