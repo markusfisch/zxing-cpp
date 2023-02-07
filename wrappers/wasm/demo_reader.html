@@ -4,6 +4,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<title>ZXing in Javascript demo</title>
+	<link rel="shortcut icon" href="#" />
 	<script src="zxing_reader.js"></script>
 	<script src="base64ArrayBuffer.js"></script>
 	<script>
@@ -19,7 +20,7 @@ function scanBarcode(file) {
 
 		var buffer = zxing._malloc(fileData.length);
 		zxing.HEAPU8.set(fileData, buffer);
-		var result = zxing.readBarcode(buffer, fileData.length, true, format);
+		var result = zxing.readBarcodeFromImage(buffer, fileData.length, true, format);
 		zxing._free(buffer);
 
 		showImage(document.getElementById("drop_zone"), fileData, file.type, result.position);
@@ -143,7 +144,7 @@ body>div {
 <body>
 	<h3>Read barcodes</h3>
 	<p>
-		This is a simple demo of WebAssembly build (using Emcripten) of <a href="https://github.com/nu-book/zxing-cpp">zxing-cpp</a>
+		This is a simple demo of WebAssembly build (using Emcripten) of <a href="https://github.com/zxing-cpp/zxing-cpp">zxing-cpp</a>
 	</p>
 	<p></p>
 	<div>
