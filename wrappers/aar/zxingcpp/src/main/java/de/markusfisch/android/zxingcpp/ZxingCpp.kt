@@ -120,7 +120,7 @@ object ZxingCpp {
 		cropRect: Rect,
 		rotation: Int = 0,
 		decodeHints: DecodeHints = DecodeHints(),
-	): Result? = readYBuffer(
+	): List<Result>? = readYBuffer(
 		yBuffer,
 		rowStride,
 		cropRect.left, cropRect.top,
@@ -136,7 +136,7 @@ object ZxingCpp {
 		width: Int, height: Int,
 		rotation: Int,
 		decodeHints: DecodeHints,
-	): Result?
+	): List<Result>?
 
 	fun readByteArray(
 		yuvData: ByteArray,
@@ -144,7 +144,7 @@ object ZxingCpp {
 		cropRect: Rect,
 		rotation: Int = 0,
 		decodeHints: DecodeHints = DecodeHints(),
-	): Result? = readByteArray(
+	): List<Result>? = readByteArray(
 		yuvData,
 		rowStride,
 		cropRect.left, cropRect.top,
@@ -160,14 +160,14 @@ object ZxingCpp {
 		width: Int, height: Int,
 		rotation: Int,
 		decodeHints: DecodeHints,
-	): Result?
+	): List<Result>?
 
 	fun readBitmap(
 		bitmap: Bitmap,
 		cropRect: Rect,
 		rotation: Int = 0,
 		decodeHints: DecodeHints = DecodeHints(),
-	): Result? = readBitmap(
+	): List<Result>? = readBitmap(
 		bitmap,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
@@ -181,7 +181,7 @@ object ZxingCpp {
 		width: Int, height: Int,
 		rotation: Int,
 		decodeHints: DecodeHints,
-	): Result?
+	): List<Result>?
 
 	data class BitMatrix(
 		val width: Int,

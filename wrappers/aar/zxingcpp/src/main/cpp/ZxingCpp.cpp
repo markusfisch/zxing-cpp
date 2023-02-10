@@ -271,10 +271,17 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 static jobject Read(JNIEnv* env, ImageView image, DecodeHints decodeHints)
 {
 	try {
-		auto result = ReadBarcode(image, decodeHints);
-		if (result.isValid()) {
-			// Only allocate Result when ReadBarcode() found something.
-			return CreateResult(env, result);
+		auto results = ReadBarcodes(image, decodeHints);
+		if (!results.empty()) {
+			// Only allocate when something is found.
+			auto cls = env->FindClass("java/util/ArrayList");
+			auto list = env->NewObject(cls,
+				env->GetMethodID(cls, "<init>", "()V"));
+			auto add = env->GetMethodID(cls, "add", "(Ljava/lang/Object;)Z");
+			for (auto result: results) {
+				env->CallBooleanMethod(list, add, CreateResult(env, result));
+			}
+			return list;
 		} else {
 			return nullptr;
 		}

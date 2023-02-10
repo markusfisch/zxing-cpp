@@ -242,6 +242,7 @@ class MainActivity : AppCompatActivity() {
 			tryRotate = chipTryRotate.isChecked
 			tryInvert = chipTryInvert.isChecked
 			tryDownscale = chipTryDownscale.isChecked
+			maxNumberOfSymbols = 1
 			formats = if (chipQrCode.isChecked) {
 				setOf(Format.QR_CODE)
 			} else {
@@ -255,8 +256,9 @@ class MainActivity : AppCompatActivity() {
 			image.imageInfo.rotationDegrees,
 			decodeHints
 		)?.let {
-			overlayView.show(it.position)
-			"${it.format}: ${it.text}"
+			val result = it.first()
+			overlayView.show(result.position)
+			"${result.format}: ${result.text}"
 		} ?: ""
 	} catch (e: Throwable) {
 		e.message ?: "Error"
