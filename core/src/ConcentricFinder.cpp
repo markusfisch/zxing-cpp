@@ -39,8 +39,12 @@ std::optional<PointF> CenterOfDoubleCross(const BitMatrix& image, PointI center,
 
 std::optional<PointF> CenterOfRing(const BitMatrix& image, PointI center, int range, int nth, bool requireCircle)
 {
+	// range is the approximate width/height of the nth ring, if nth>1 then it would be plausible to limit the search radius
+	// to approximately range / 2 * sqrt(2) == range * 0.75 but it turned out to be too limiting with realworld/noisy data.
+	int radius = range;
+	log(center, 3);
 	BitMatrixCursorI cur(image, center, {0, 1});
-	if (!cur.stepToEdge(nth, range))
+	if (!cur.stepToEdge(nth, radius))
 		return {};
 	cur.turnRight(); // move clock wise and keep edge on the right
 
@@ -60,7 +64,7 @@ std::optional<PointF> CenterOfRing(const BitMatrix& image, PointI center, int ra
 			return {};
 
 		// use L-inf norm, simply because it is a lot faster than L2-norm and sufficiently accurate
-		if (maxAbsComponent(cur.p - center) > range || center == cur.p || n > 4 * 2 * range)
+		if (maxAbsComponent(cur.p - center) > radius || center == cur.p || n > 4 * 2 * range)
 			return {};
 	} while (cur.p != start);
 
