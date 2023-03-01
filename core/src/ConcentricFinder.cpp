@@ -42,11 +42,14 @@ std::optional<PointF> CenterOfRing(const BitMatrix& image, PointI center, int ra
 	// range is the approximate width/height of the nth ring, if nth>1 then it would be plausible to limit the search radius
 	// to approximately range / 2 * sqrt(2) == range * 0.75 but it turned out to be too limiting with realworld/noisy data.
 	int radius = range;
+	bool inner = nth < 0;
+	nth = std::abs(nth);
 	log(center, 3);
 	BitMatrixCursorI cur(image, center, {0, 1});
-	if (!cur.stepToEdge(nth, radius))
+	if (!cur.stepToEdge(nth, radius, inner))
 		return {};
-	cur.turnRight(); // move clock wise and keep edge on the right
+	cur.turnRight(); // move clock wise and keep edge on the right/left depending on backup
+	const auto edgeDir = inner ? Direction::LEFT : Direction::RIGHT;
 
 	uint32_t neighbourMask = 0;
 	auto start = cur.p;
@@ -60,7 +63,7 @@ std::optional<PointF> CenterOfRing(const BitMatrix& image, PointI center, int ra
 		// find out if we come full circle around the center. 8 bits have to be set in the end.
 		neighbourMask |= (1 << (4 + dot(bresenhamDirection(cur.p - center), PointI(1, 3))));
 
-		if (!cur.stepAlongEdge(Direction::RIGHT))
+		if (!cur.stepAlongEdge(edgeDir))
 			return {};
 
 		// use L-inf norm, simply because it is a lot faster than L2-norm and sufficiently accurate
@@ -111,8 +114,10 @@ std::optional<PointF> FinetuneConcentricPatternCenter(const BitMatrix& image, Po
 static std::vector<PointF> CollectRingPoints(const BitMatrix& image, PointF center, int range, int edgeIndex, bool backup)
 {
 	PointI centerI(center);
+	int radius = range;
 	BitMatrixCursorI cur(image, centerI, {0, 1});
-	cur.stepToEdge(edgeIndex, range, backup);
+	if (!cur.stepToEdge(edgeIndex, radius, backup))
+		return {};
 	cur.turnRight(); // move clock wise and keep edge on the right/left depending on backup
 	const auto edgeDir = backup ? Direction::LEFT : Direction::RIGHT;
 
@@ -132,7 +137,7 @@ static std::vector<PointF> CollectRingPoints(const BitMatrix& image, PointF cent
 			return {};
 
 		// use L-inf norm, simply because it is a lot faster than L2-norm and sufficiently accurate
-		if (maxAbsComponent(cur.p - center) > range || centerI == cur.p || Size(points) > 4 * 2 * range)
+		if (maxAbsComponent(cur.p - centerI) > radius || centerI == cur.p || Size(points) > 4 * 2 * range)
 			return {};
 
 	} while (cur.p != start);
@@ -182,31 +187,35 @@ static bool QuadrilateralIsPlausibleSquare(const QuadrilateralF q, int lineIndex
 	return m >= lineIndex * 2 && m > M / 3;
 }
 
+static std::optional<QuadrilateralF> FitSquareToPoints(const BitMatrix& image, PointF center, int range, int lineIndex, bool backup)
+{
+	auto points = CollectRingPoints(image, center, range, lineIndex, backup);
+	if (points.empty())
+		return {};
+
+	auto res = FitQadrilateralToPoints(center, points);
+	if (!res || !QuadrilateralIsPlausibleSquare(*res, lineIndex - backup))
+		return {};
+
+	return res;
+}
+
 std::optional<QuadrilateralF> FindConcentricPatternCorners(const BitMatrix& image, PointF center, int range, int lineIndex)
 {
-	auto innerPoints = CollectRingPoints(image, center, range, lineIndex, false);
-	auto outerPoints = CollectRingPoints(image, center, range, lineIndex + 1, true);
-
-	if (innerPoints.empty() || outerPoints.empty())
+	auto innerCorners = FitSquareToPoints(image, center, range, lineIndex, false);
+	if (!innerCorners)
 		return {};
 
-	auto oInnerCorners = FitQadrilateralToPoints(center, innerPoints);
-	if (!oInnerCorners || !QuadrilateralIsPlausibleSquare(*oInnerCorners, lineIndex))
+	auto outerCorners = FitSquareToPoints(image, center, range, lineIndex + 1, true);
+	if (!outerCorners)
 		return {};
 
-	auto oOuterCorners = FitQadrilateralToPoints(center, outerPoints);
-	if (!oOuterCorners || !QuadrilateralIsPlausibleSquare(*oOuterCorners, lineIndex))
-		return {};
+	auto res = Blend(*innerCorners, *outerCorners);
 
-	auto& innerCorners = *oInnerCorners;
-	auto& outerCorners = *oOuterCorners;
-
-	auto res = Blend(innerCorners, outerCorners);
-
-	for (auto p : innerCorners)
+	for (auto p : *innerCorners)
 		log(p, 3);
 
-	for (auto p : outerCorners)
+	for (auto p : *outerCorners)
 		log(p, 3);
 
 	for (auto p : res)

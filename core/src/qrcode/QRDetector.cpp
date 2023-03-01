@@ -179,31 +179,26 @@ FinderPatternSets GenerateFinderPatternSets(FinderPatterns& patterns)
 	return res;
 }
 
-static double EstimateModuleSize(const BitMatrix& image, PointF a, PointF b)
+static double EstimateModuleSize(const BitMatrix& image, ConcentricPattern a, ConcentricPattern b)
 {
 	BitMatrixCursorF cur(image, a, b - a);
 	assert(cur.isBlack());
 
-	if (!cur.stepToEdge(3, static_cast<int>(distance(a, b) / 3), true))
+	auto pattern = ReadSymmetricPattern<std::array<PatternView::value_type, 5>>(cur, a.size * 2);
+	if (!pattern || !IsPattern<true>(*pattern, PATTERN))
 		return -1;
 
-	assert(cur.isBlack());
-	cur.turnBack();
-
-
-	auto pattern = cur.readPattern<std::array<int, 5>>();
-
-	return (2 * Reduce(pattern) - pattern[0] - pattern[4]) / 12.0 * length(cur.d);
+	return (2 * Reduce(*pattern) - (*pattern)[0] - (*pattern)[4]) / 12.0 * length(cur.d);
 }
 
 struct DimensionEstimate
 {
 	int dim = 0;
 	double ms = 0;
-	int err = 0;
+	int err = 4;
 };
 
-static DimensionEstimate EstimateDimension(const BitMatrix& image, PointF a, PointF b)
+static DimensionEstimate EstimateDimension(const BitMatrix& image, ConcentricPattern a, ConcentricPattern b)
 {
 	auto ms_a = EstimateModuleSize(image, a, b);
 	auto ms_b = EstimateModuleSize(image, b, a);
@@ -290,7 +285,7 @@ static std::optional<PointF> LocateAlignmentPattern(const BitMatrix& image, int 
 			continue;
 
 		if (auto cor1 = CenterOfRing(image, PointI(*cor), moduleSize, 1))
-			if (auto cor2 = CenterOfRing(image, PointI(*cor), moduleSize * 3, 2))
+			if (auto cor2 = CenterOfRing(image, PointI(*cor), moduleSize * 3, -2))
 				if (distance(*cor1, *cor2) < moduleSize / 2) {
 					auto res = (*cor1 + *cor2) / 2;
 					log(res, 3);
@@ -329,10 +324,10 @@ DetectorResult SampleQR(const BitMatrix& image, const FinderPatternSet& fp)
 	auto top  = EstimateDimension(image, fp.tl, fp.tr);
 	auto left = EstimateDimension(image, fp.tl, fp.bl);
 
-	if (!top.dim || !left.dim)
+	if (!top.dim && !left.dim)
 		return {};
 
-	auto best = top.err < left.err ? top : left;
+	auto best = top.err == left.err ? (top.dim > left.dim ? top : left) : (top.err < left.err ? top : left);
 	int dimension = best.dim;
 	int moduleSize = static_cast<int>(best.ms + 1);
 
@@ -430,12 +425,12 @@ DetectorResult SampleQR(const BitMatrix& image, const FinderPatternSet& fp)
 
 				// find the two closest valid alignment pattern pixel positions both horizontally and vertically
 				std::vector<PointF> hori, verti;
-				for (int i = 2; i < 2 * N && Size(hori) < 2; ++i) {
+				for (int i = 2; i < 2 * N + 2 && Size(hori) < 2; ++i) {
 					int xi = x + i / 2 * (i%2 ? 1 : -1);
 					if (0 <= xi && xi <= N && apP(xi, y))
 						hori.push_back(*apP(xi, y));
 				}
-				for (int i = 2; i < 2 * N && Size(verti) < 2; ++i) {
+				for (int i = 2; i < 2 * N + 2 && Size(verti) < 2; ++i) {
 					int yi = y + i / 2 * (i%2 ? 1 : -1);
 					if (0 <= yi && yi <= N && apP(x, yi))
 						verti.push_back(*apP(x, yi));
@@ -455,7 +450,7 @@ DetectorResult SampleQR(const BitMatrix& image, const FinderPatternSet& fp)
 			mod2Pix = Mod2Pix(dimension, PointF(3, 3), {fp.tl, fp.tr, *c, fp.bl});
 
 		// go over the whole set of alignment patters again and fill any remaining gaps by a projection based on an updated mod2Pix
-		// projection. This works if the symbol is flat, wich is a reasonable fall-back assumption
+		// projection. This works if the symbol is flat, wich is a reasonable fall-back assumption.
 		for (int y = 0; y <= N; ++y)
 			for (int x = 0; x <= N; ++x) {
 				if (apP(x, y))
@@ -515,7 +510,8 @@ DetectorResult DetectPureQR(const BitMatrix& image)
 	}
 
 	auto fpWidth = Reduce(diagonal);
-	auto dimension = EstimateDimension(image, tl + fpWidth / 2 * PointF(1, 1), tr + fpWidth / 2 * PointF(-1, 1)).dim;
+	auto dimension =
+		EstimateDimension(image, {tl + fpWidth / 2 * PointF(1, 1), fpWidth}, {tr + fpWidth / 2 * PointF(-1, 1), fpWidth}).dim;
 
 	float moduleSize = float(width) / dimension;
 	if (dimension < MIN_MODULES || dimension > MAX_MODULES ||
