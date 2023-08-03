@@ -191,102 +191,65 @@ object ZxingCpp {
 		fun get(x: Int, y: Int) = data[y * width + x] == 0.toByte()
 	}
 
-	fun encodeAsBitmap(
-		text: String,
-		format: Format,
-		width: Int = 0,
-		height: Int = 0,
-		margin: Int = -1,
-		ecLevel: Int = -1,
+	fun BitMatrix.toBitmap(
 		setColor: Int = 0xff000000.toInt(),
 		unsetColor: Int = 0xffffffff.toInt()
 	): Bitmap {
-		val bitMatrix = encode(
-			text, format.toString(),
-			width, height,
-			margin, ecLevel
-		)
-		val w = bitMatrix.width
-		val h = bitMatrix.height
-		val pixels = IntArray(w * h)
+		val pixels = IntArray(width * height)
 		var offset = 0
-		for (y in 0 until h) {
-			for (x in 0 until w) {
-				pixels[offset + x] = if (bitMatrix.get(x, y)) {
+		for (y in 0 until height) {
+			for (x in 0 until width) {
+				pixels[offset + x] = if (get(x, y)) {
 					setColor
 				} else {
 					unsetColor
 				}
 			}
-			offset += w
+			offset += width
 		}
-		val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-		bitmap.setPixels(pixels, 0, w, 0, 0, w, h)
+		val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+		bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
 		return bitmap
 	}
 
-	fun encodeAsSvg(
-		text: String,
-		format: Format,
-		margin: Int = -1,
-		ecLevel: Int = -1
-	): String {
-		val bitMatrix = encode(
-			text, format.toString(),
-			0, 0,
-			margin, ecLevel
-		)
+	fun BitMatrix.toSvg(): String {
 		val sb = StringBuilder()
-		val w = bitMatrix.width
-		var h = bitMatrix.height
-		val moduleHeight = if (h == 1) w / 2 else 1
-		for (y in 0 until h) {
-			for (x in 0 until w) {
-				if (bitMatrix.get(x, y)) {
+		val moduleHeight = if (height == 1) width / 2 else 1
+		for (y in 0 until height) {
+			for (x in 0 until width) {
+				if (get(x, y)) {
 					sb.append(" M${x},${y}h1v${moduleHeight}h-1z")
 				}
 			}
 		}
-		h *= moduleHeight
-		return """<svg width="$w" height="$h"
-viewBox="0 0 $w $h"
+		val h = height * moduleHeight
+		return """<svg width="$width" height="$h"
+viewBox="0 0 $width $h"
 xmlns="http://www.w3.org/2000/svg">
 <path d="$sb"/>
 </svg>
 """
 	}
 
-	fun encodeAsText(
-		text: String,
-		format: Format,
-		margin: Int = -1,
-		ecLevel: Int = -1,
+	fun BitMatrix.toText(
 		inverted: Boolean = false
 	): String {
-		val bitMatrix = encode(
-			text, format.toString(),
-			0, 0,
-			margin, ecLevel
-		)
-		val w = bitMatrix.width
-		val h = bitMatrix.height
 		val sb = StringBuilder()
 		fun Boolean.toInt() = if (this) 1 else 0
-		if (h == 1) {
+		if (height == 1) {
 			val map = if (inverted) "█ " else " █"
-			for (y in 0 until h) {
-				for (x in 0 until w) {
-					sb.append(map[bitMatrix.get(x, y).toInt()])
+			for (y in 0 until height) {
+				for (x in 0 until width) {
+					sb.append(map[get(x, y).toInt()])
 				}
 				sb.append('\n')
 			}
-
 		} else {
 			val map = if (inverted) "█▄▀ " else " ▀▄█"
-			for (y in 0 until h step 2) {
-				for (x in 0 until w) {
-					val tp = bitMatrix.get(x, y).toInt()
-					val bt = (y + 1 < h && bitMatrix.get(x, y + 1)).toInt()
+			for (y in 0 until height step 2) {
+				for (x in 0 until width) {
+					val tp = get(x, y).toInt()
+					val bt = (y + 1 < height && get(x, y + 1)).toInt()
 					sb.append(map[tp or (bt shl 1)])
 				}
 				sb.append('\n')
@@ -295,8 +258,75 @@ xmlns="http://www.w3.org/2000/svg">
 		return sb.toString()
 	}
 
-	external fun encode(
+	fun <T> encodeAsBitmap(
+		content: T,
+		format: Format,
+		width: Int = 0,
+		height: Int = 0,
+		margin: Int = -1,
+		ecLevel: Int = -1,
+		setColor: Int = 0xff000000.toInt(),
+		unsetColor: Int = 0xffffffff.toInt()
+	): Bitmap = content.encode(
+		format.toString(),
+		width, height,
+		margin, ecLevel
+	).toBitmap(setColor, unsetColor)
+
+	fun <T> encodeAsSvg(
+		content: T,
+		format: Format,
+		margin: Int = -1,
+		ecLevel: Int = -1
+	): String = content.encode(
+		format.toString(),
+		0, 0,
+		margin, ecLevel
+	).toSvg()
+
+	fun <T> encodeAsText(
+		content: T,
+		format: Format,
+		margin: Int = -1,
+		ecLevel: Int = -1,
+		inverted: Boolean = false
+	): String = content.encode(
+		format.toString(),
+		0, 0,
+		margin, ecLevel
+	).toText(inverted)
+
+	fun <T> T.encode(
+		format: String,
+		width: Int = 0,
+		height: Int = 0,
+		margin: Int = -1,
+		ecLevel: Int = -1
+	): BitMatrix = when (this) {
+		is String -> encodeString(
+			this, format, width, height, margin, ecLevel
+		)
+
+		is ByteArray -> encodeByteArray(
+			this, format, width, height, margin, ecLevel
+		)
+
+		else -> throw IllegalArgumentException(
+			"encode() is not implemented for this type"
+		)
+	}
+
+	private external fun encodeString(
 		text: String,
+		format: String,
+		width: Int = 0,
+		height: Int = 0,
+		margin: Int = -1,
+		ecLevel: Int = -1
+	): BitMatrix
+
+	private external fun encodeByteArray(
+		bytes: ByteArray,
 		format: String,
 		width: Int = 0,
 		height: Int = 0,

@@ -8,6 +8,9 @@ debug:
 lint:
 	./gradlew :zxingcpp:lintDebug
 
+cat:
+	./gradlew cAT
+
 aar: clean lint
 	./gradlew :zxingcpp:assembleRelease
 

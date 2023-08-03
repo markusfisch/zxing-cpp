@@ -278,7 +278,7 @@ static jobject Read(JNIEnv* env, ImageView image, DecodeHints decodeHints)
 			auto list = env->NewObject(cls,
 				env->GetMethodID(cls, "<init>", "()V"));
 			auto add = env->GetMethodID(cls, "add", "(Ljava/lang/Object;)Z");
-			for (auto result: results) {
+			for (const auto& result: results) {
 				env->CallBooleanMethod(list, add, CreateResult(env, result));
 			}
 			return list;
@@ -452,21 +452,49 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readBitmap(
 	return Read(env, image, CreateDecodeHints(env, hints));
 }
 
-extern "C" JNIEXPORT jobject JNICALL
-Java_de_markusfisch_android_zxingcpp_ZxingCpp_encode(
-	JNIEnv* env, jobject, jstring text, jstring format,
-	jint width, jint height, jint margin, jint eccLevel)
+static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet encoding,
+	jstring format, jint width, jint height, jint margin, jint eccLevel)
 {
 	try {
 		auto writer = MultiFormatWriter(BarcodeFormatFromString(J2CString(env, format)))
-			.setEncoding(CharacterSet::UTF8)
+			.setEncoding(encoding)
 			.setMargin(margin)
 			.setEccLevel(eccLevel);
-		auto matrix = ToMatrix<uint8_t>(writer.encode(
-			J2CString(env, text), width, height));
-		return CreateBitMatrix(env, matrix);
+		// Avoid MultiFormatWriter.encode(std::string,…)
+		// because it ignores encoding and always runs
+		// FromUtf8() which mangles binary content.
+		std::wstring ws = encoding == CharacterSet::UTF8
+			? FromUtf8(content)
+			: std::wstring(content.begin(), content.end());
+		auto bm = writer.encode(ws, width, height);
+		return CreateBitMatrix(env, ToMatrix<uint8_t>(bm));
 	} catch (const std::exception& e) {
 		ThrowJavaException(env, e.what());
 		return nullptr;
 	}
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeString(
+	JNIEnv* env, jobject, jstring text, jstring format,
+	jint width, jint height, jint margin, jint eccLevel)
+{
+	return Encode(env, J2CString(env, text), CharacterSet::UTF8,
+		format, width, height, margin, eccLevel);
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeByteArray(
+	JNIEnv* env, jobject, jbyteArray data, jstring format,
+	jint width, jint height, jint margin, jint eccLevel)
+{
+	auto bytes = env->GetByteArrayElements(data, nullptr);
+	auto bitmap = Encode(env,
+		std::string(
+			reinterpret_cast<const char*>(bytes),
+			env->GetArrayLength(data)),
+		CharacterSet::BINARY,
+		format, width, height, margin, eccLevel);
+	env->ReleaseByteArrayElements(data, bytes, 0);
+	return bitmap;
 }
