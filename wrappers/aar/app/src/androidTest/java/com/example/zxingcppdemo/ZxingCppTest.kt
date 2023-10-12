@@ -3,6 +3,7 @@ package com.example.zxingcppdemo
 import android.graphics.Rect
 import androidx.test.runner.AndroidJUnit4
 import de.markusfisch.android.zxingcpp.ZxingCpp
+import de.markusfisch.android.zxingcpp.ZxingCpp.Format
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -14,7 +15,11 @@ class ZxingCppTest {
 	fun encodeDecode() {
 		encodeDecodeString(
 			"The quick brown fox jumps over the lazy dog.",
-			ZxingCpp.Format.QR_CODE
+			Format.QR_CODE
+		)
+		encodeDecodeString(
+			"This is test 😁",
+			Format.DATA_MATRIX
 		)
 	}
 
@@ -25,15 +30,13 @@ class ZxingCppTest {
 		for (i in 0 until size) {
 			bytes[i] = (i % 256).toByte()
 		}
-		encodeDecodeByteArray(bytes, ZxingCpp.Format.QR_CODE)
-		encodeDecodeByteArray(bytes, ZxingCpp.Format.AZTEC)
+		encodeDecodeByteArray(bytes, Format.QR_CODE)
+		encodeDecodeByteArray(bytes, Format.AZTEC)
+		encodeDecodeByteArray(bytes, Format.DATA_MATRIX)
 	}
 }
 
-fun encodeDecodeString(
-	text: String,
-	format: ZxingCpp.Format
-) {
+fun encodeDecodeString(text: String, format: Format) {
 	val bitmap = ZxingCpp.encodeAsBitmap(text, format)
 	assertNotNull(bitmap)
 	val results = bitmap.run {
@@ -48,11 +51,10 @@ fun encodeDecodeString(
 	assertEquals(text, result?.text)
 }
 
-fun encodeDecodeByteArray(
-	bytes: ByteArray,
-	format: ZxingCpp.Format
-) {
-	val bitmap = ZxingCpp.encodeAsBitmap(bytes, format)
+fun encodeDecodeByteArray(bytes: ByteArray, format: Format) {
+	// 640x640 is required because ZXingCpp can't read DataMatrix with
+	// a module size of one pixel, unfortunately.
+	val bitmap = ZxingCpp.encodeAsBitmap(bytes, format, 640, 640)
 	assertNotNull(bitmap)
 	val results = bitmap.run {
 		ZxingCpp.readBitmap(
