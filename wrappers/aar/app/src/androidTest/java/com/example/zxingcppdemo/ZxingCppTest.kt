@@ -52,14 +52,16 @@ fun encodeDecodeString(text: String, format: Format) {
 }
 
 fun encodeDecodeByteArray(bytes: ByteArray, format: Format) {
-	// 640x640 is required because ZXingCpp can't read DataMatrix with
-	// a module size of one pixel, unfortunately.
-	val bitmap = ZxingCpp.encodeAsBitmap(bytes, format, 640, 640)
+	val bitmap = ZxingCpp.encodeAsBitmap(bytes, format)
 	assertNotNull(bitmap)
 	val results = bitmap.run {
 		ZxingCpp.readBitmap(
 			this,
-			Rect(0, 0, width, height)
+			Rect(0, 0, width, height),
+			decodeHints = ZxingCpp.DecodeHints().apply {
+				// Required to read the dense DataMatrix for now.
+				isPure = true
+			}
 		)
 	}
 	assertEquals(1, results?.size)
