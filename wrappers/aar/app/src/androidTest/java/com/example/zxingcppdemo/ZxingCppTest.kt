@@ -57,11 +57,7 @@ fun encodeDecodeByteArray(bytes: ByteArray, format: Format) {
 	val results = bitmap.run {
 		ZxingCpp.readBitmap(
 			this,
-			Rect(0, 0, width, height),
-			decodeHints = ZxingCpp.DecodeHints().apply {
-				// Required to read the dense DataMatrix for now.
-				isPure = true
-			}
+			Rect(0, 0, width, height)
 		)
 	}
 	assertEquals(1, results?.size)
