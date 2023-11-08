@@ -24,6 +24,7 @@ import android.hardware.camera2.CaptureRequest
 import android.media.AudioManager
 import android.media.MediaActionSound
 import android.media.ToneGenerator
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.View
@@ -44,19 +45,26 @@ import com.zxingcpp.BarcodeReader.Format
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executors
-import kotlin.random.Random
 
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var binding: ActivityCameraBinding
 
 	private val executor = Executors.newSingleThreadExecutor()
-	private val permissions = listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-	private val permissionsRequestCode = Random.nextInt(0, 10000)
+	private val permissions = mutableListOf(Manifest.permission.CAMERA)
+	private val permissionsRequestCode = 1
 
 	private val beeper = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 50)
 	private var lastText = String()
 	private var doSaveImage: Boolean = false
+
+	init {
+		// On R or higher, this permission has no effect. See:
+		// https://developer.android.com/reference/android/Manifest.permission#WRITE_EXTERNAL_STORAGE
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+			permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+		}
+	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
