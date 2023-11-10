@@ -19,7 +19,7 @@ class OverlayView : View {
 	}
 	private val cropRectInView = RectF()
 	private val transformationMatrix = Matrix()
-	private val coords = FloatArray(16)
+	private val coords = FloatArray(128)
 
 	private var count = 0
 
@@ -67,17 +67,14 @@ class OverlayView : View {
 	}
 
 	fun show(resultPoints: Array<ResultPoint>?) {
-		count = 0
 		resultPoints ?: return
 		for (p in resultPoints) {
-			coords[count++] = p.x
-			coords[count++] = p.y
+			coords.add(p.x)
+			coords.add(p.y)
 		}
-		transformationMatrix.mapPoints(coords, count)
 	}
 
 	fun show(position: ZxingCpp.Position?) {
-		count = 0
 		position ?: return
 		setOf(
 			position.topLeft,
@@ -85,13 +82,19 @@ class OverlayView : View {
 			position.bottomRight,
 			position.bottomLeft
 		).forEach {
-			coords[count++] = it.x.toFloat()
-			coords[count++] = it.y.toFloat()
+			coords.add(it.x.toFloat())
+			coords.add(it.y.toFloat())
 		}
-		transformationMatrix.mapPoints(coords, count)
+	}
+
+	private fun FloatArray.add(value: Float) {
+		if (count < size) {
+			set(count++, value)
+		}
 	}
 
 	override fun onDraw(canvas: Canvas) {
+		transformationMatrix.mapPoints(coords, 0, coords, 0, count)
 		canvas.apply {
 			drawRect(cropRectInView, cropPaint)
 			for (i in 0 until count step 2) {
@@ -103,8 +106,4 @@ class OverlayView : View {
 
 private fun paint(color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
 	this.color = color
-}
-
-private fun Matrix.mapPoints(points: FloatArray, count: Int) {
-	mapPoints(points, 0, points, 0, count)
 }

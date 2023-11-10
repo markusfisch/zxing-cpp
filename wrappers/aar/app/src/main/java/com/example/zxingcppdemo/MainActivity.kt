@@ -254,8 +254,7 @@ class MainActivity : AppCompatActivity() {
 			cropRect,
 			image.imageInfo.rotationDegrees,
 			decodeHints
-		)?.let {
-			val result = it.first()
+		)?.joinToString("\n") { result ->
 			overlayView.show(result.position)
 			"${result.format}: ${result.text}"
 		} ?: ""
