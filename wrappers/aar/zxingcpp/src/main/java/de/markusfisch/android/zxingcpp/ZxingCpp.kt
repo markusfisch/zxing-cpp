@@ -61,6 +61,7 @@ object ZxingCpp {
 	}
 
 	data class DecodeHints(
+		var formats: String = "",
 		var tryHarder: Boolean = true,
 		var tryRotate: Boolean = true,
 		var tryInvert: Boolean = true,
@@ -77,8 +78,7 @@ object ZxingCpp {
 		var textMode: TextMode = TextMode.HRI,
 		var minLineCount: Int = 2,
 		var maxNumberOfSymbols: Int = 0xff,
-		var downscaleThreshold: Int = 500,
-		var formats: String = ""
+		var downscaleThreshold: Int = 500
 	)
 
 	data class Position(

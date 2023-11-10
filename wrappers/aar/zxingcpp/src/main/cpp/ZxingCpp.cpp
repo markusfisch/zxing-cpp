@@ -322,6 +322,8 @@ static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
 {
 	jclass cls = env->GetObjectClass(hints);
 	return DecodeHints()
+		.setFormats(BarcodeFormatsFromString(
+			GetStringField(env, cls, hints, "formats")))
 		.setTryHarder(GetBooleanField(env, cls, hints, "tryHarder"))
 		.setTryRotate(GetBooleanField(env, cls, hints, "tryRotate"))
 		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
@@ -344,9 +346,7 @@ static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
 			"textMode")))
 		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
 		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
-		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"))
-		.setFormats(BarcodeFormatsFromString(
-			GetStringField(env, cls, hints, "formats")));
+		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"));
 }
 
 extern "C" JNIEXPORT jobject JNICALL

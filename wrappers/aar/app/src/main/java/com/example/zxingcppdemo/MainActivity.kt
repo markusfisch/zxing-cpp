@@ -236,19 +236,18 @@ class MainActivity : AppCompatActivity() {
 	}
 
 	private fun scanCpp(image: ImageProxy, cropRect: Rect): String = try {
-		val yPlane = image.planes[0]
 		decodeHints.apply {
-			tryHarder = chipTryHarder.isChecked
-			tryRotate = chipTryRotate.isChecked
-			tryInvert = chipTryInvert.isChecked
-			tryDownscale = chipTryDownscale.isChecked
-			maxNumberOfSymbols = 1
 			formats = if (chipQrCode.isChecked) {
 				setOf(Format.QR_CODE)
 			} else {
 				setOf()
 			}.joinToString()
+			tryHarder = chipTryHarder.isChecked
+			tryRotate = chipTryRotate.isChecked
+			tryInvert = chipTryInvert.isChecked
+			tryDownscale = chipTryDownscale.isChecked
 		}
+		val yPlane = image.planes[0]
 		ZxingCpp.readYBuffer(
 			yPlane.buffer,
 			yPlane.rowStride,
