@@ -241,7 +241,7 @@ class MainActivity : AppCompatActivity() {
 				setOf(Format.QR_CODE)
 			} else {
 				setOf()
-			}.joinToString()
+			}
 			tryHarder = chipTryHarder.isChecked
 			tryRotate = chipTryRotate.isChecked
 			tryInvert = chipTryInvert.isChecked

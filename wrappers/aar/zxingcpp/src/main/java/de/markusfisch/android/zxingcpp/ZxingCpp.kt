@@ -61,7 +61,7 @@ object ZxingCpp {
 	}
 
 	data class DecodeHints(
-		var formats: String = "",
+		var formats: Set<Format> = setOf(),
 		var tryHarder: Boolean = true,
 		var tryRotate: Boolean = true,
 		var tryInvert: Boolean = true,

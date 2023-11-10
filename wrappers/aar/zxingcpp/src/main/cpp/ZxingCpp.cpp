@@ -312,14 +312,6 @@ static int GetIntField(JNIEnv* env, jclass cls, jobject hints,
 	return env->GetIntField(hints, env->GetFieldID(cls, name, "I"));
 }
 
-static std::string GetStringField(JNIEnv* env, jclass cls, jobject hints,
-	const char* name)
-{
-	jfieldID fid = env->GetFieldID(cls, name, "Ljava/lang/String;");
-	auto str = (jstring) env->GetObjectField(hints, fid);
-	return J2CString(env, str);
-}
-
 static std::string GetEnumField(JNIEnv* env, jclass hintClass, jobject hints,
 	const char* enumClass, const char* name)
 {
@@ -331,12 +323,25 @@ static std::string GetEnumField(JNIEnv* env, jclass hintClass, jobject hints,
 	return J2CString(env, s);
 }
 
+static std::string JoinFormats(JNIEnv* env, jclass hintClass, jobject hints)
+{
+	const char* setClass = "java/util/Set";
+	jclass cls = env->FindClass(setClass);
+	jstring jStr = (jstring) env->CallObjectMethod(
+		env->GetObjectField(hints, env->GetFieldID(hintClass, "formats",
+			("L" + std::string(setClass) + ";").c_str())),
+		env->GetMethodID(cls, "toString", "()Ljava/lang/String;"));
+	std::string s = J2CString(env, jStr);
+	s.erase(0, s.find_first_not_of("["));
+	s.erase(s.find_last_not_of("]") + 1);
+	return s;
+}
+
 static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
 {
 	jclass cls = env->GetObjectClass(hints);
 	return DecodeHints()
-		.setFormats(BarcodeFormatsFromString(
-			GetStringField(env, cls, hints, "formats")))
+		.setFormats(BarcodeFormatsFromString(JoinFormats(env, cls, hints)))
 		.setTryHarder(GetBooleanField(env, cls, hints, "tryHarder"))
 		.setTryRotate(GetBooleanField(env, cls, hints, "tryRotate"))
 		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
