@@ -213,14 +213,27 @@ static jobject CreatePosition(JNIEnv* env, const Position& position)
 		position.orientation());
 }
 
+static jobject CreateEnum(JNIEnv* env, const char* enumClass,
+	const char* value)
+{
+	jclass cls = env->FindClass(enumClass);
+	jfieldID fidCT = env->GetStaticFieldID(cls, value,
+		("L" + std::string(enumClass) + ";").c_str());
+	return env->GetStaticObjectField(cls, fidCT);
+}
+
 static jobject CreateContentType(JNIEnv* env, ContentType contentType)
 {
-	jclass cls = env->FindClass(
-		"de/markusfisch/android/zxingcpp/ZxingCpp$ContentType");
-	jfieldID fidCT = env->GetStaticFieldID(cls,
-		JavaContentTypeName(contentType),
-		"Lde/markusfisch/android/zxingcpp/ZxingCpp$ContentType;");
-	return env->GetStaticObjectField(cls, fidCT);
+	return CreateEnum(env,
+		"de/markusfisch/android/zxingcpp/ZxingCpp$ContentType",
+		JavaContentTypeName(contentType));
+}
+
+static jobject CreateFormat(JNIEnv* env, BarcodeFormat format)
+{
+	return CreateEnum(env,
+		"de/markusfisch/android/zxingcpp/ZxingCpp$Format",
+		JavaBarcodeFormatName(format));
 }
 
 static jobject CreateResult(JNIEnv* env, const Result& result)
@@ -229,7 +242,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"de/markusfisch/android/zxingcpp/ZxingCpp$Result");
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
-		"(Ljava/lang/String;"
+		"(Lde/markusfisch/android/zxingcpp/ZxingCpp$Format;"
 		"Lde/markusfisch/android/zxingcpp/ZxingCpp$ContentType;"
 		"Ljava/lang/String;"
 		"Lde/markusfisch/android/zxingcpp/ZxingCpp$Position;"
@@ -246,7 +259,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"Lde/markusfisch/android/zxingcpp/ZxingCpp$GTIN;)V");
 	return env->NewObject(
 		cls, constructor,
-		C2JString(env, JavaBarcodeFormatName(result.format())),
+		CreateFormat(env, result.format()),
 		CreateContentType(env, result.contentType()),
 		C2JString(env, result.text()),
 		CreatePosition(env, result.position()),

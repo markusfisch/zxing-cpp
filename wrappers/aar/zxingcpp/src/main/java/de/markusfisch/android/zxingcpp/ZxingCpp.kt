@@ -97,7 +97,7 @@ object ZxingCpp {
 	)
 
 	data class Result(
-		val format: String,
+		val format: Format,
 		val contentType: ContentType,
 		val text: String,
 		val position: Position,
