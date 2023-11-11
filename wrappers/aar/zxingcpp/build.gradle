@@ -22,6 +22,8 @@ android {
 				arguments "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
 			}
 		}
+
+		consumerProguardFiles 'consumer-rules.pro'
 	}
 
 	externalNativeBuild {
