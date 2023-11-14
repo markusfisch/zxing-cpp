@@ -23,20 +23,20 @@ import java.nio.ByteBuffer
 
 object ZxingCpp {
 	// These enums have to be kept in sync with the native (C++/JNI) side.
-	enum class ContentType {
-		TEXT, BINARY, MIXED, GS1, ISO15434, UNKNOWN_ECI
-	}
-
 	enum class Binarizer {
 		LOCAL_AVERAGE, GLOBAL_HISTOGRAM, FIXED_THRESHOLD, BOOL_CAST
+	}
+
+	enum class ContentType {
+		TEXT, BINARY, MIXED, GS1, ISO15434, UNKNOWN_ECI
 	}
 
 	enum class EanAddOnSymbol {
 		IGNORE, READ, REQUIRE
 	}
 
-	enum class TextMode {
-		PLAIN, ECI, HRI, HEX, ESCAPED
+	enum class ErrorType {
+		FORMAT, CHECKSUM, UNSUPPORTED
 	}
 
 	enum class Format {
@@ -60,6 +60,10 @@ object ZxingCpp {
 		UPC_E,
 	}
 
+	enum class TextMode {
+		PLAIN, ECI, HRI, HEX, ESCAPED
+	}
+
 	data class DecodeHints(
 		var formats: Set<Format> = setOf(),
 		var tryHarder: Boolean = true,
@@ -81,12 +85,9 @@ object ZxingCpp {
 		var downscaleThreshold: Int = 500
 	)
 
-	data class Position(
-		val topLeft: Point,
-		val topRight: Point,
-		val bottomLeft: Point,
-		val bottomRight: Point,
-		val orientation: Double
+	data class Error(
+		val type: ErrorType,
+		val message: String
 	)
 
 	data class GTIN(
@@ -94,6 +95,14 @@ object ZxingCpp {
 		val addOn: String,
 		val price: String,
 		val issueNumber: String
+	)
+
+	data class Position(
+		val topLeft: Point,
+		val topRight: Point,
+		val bottomLeft: Point,
+		val bottomRight: Point,
+		val orientation: Double
 	)
 
 	data class Result(
@@ -111,7 +120,8 @@ object ZxingCpp {
 		val readerInit: Boolean,
 		val lineCount: Int,
 		val version: String,
-		val gtin: GTIN?
+		val gtin: GTIN?,
+		val error: Error?
 	)
 
 	fun readYBuffer(

@@ -67,6 +67,17 @@ static const char* JavaContentTypeName(ContentType contentType)
 	}
 }
 
+static const char* JavaErrorTypeName(Error::Type errorType)
+{
+	// These have to be the names of the enum constants in the kotlin code.
+	switch (errorType) {
+	case Error::Type::Format: return "FORMAT";
+	case Error::Type::Checksum: return "CHECKSUM";
+	case Error::Type::Unsupported: return "UNSUPPORTED";
+	default: throw std::invalid_argument("Invalid errorType");
+	}
+}
+
 static EanAddOnSymbol EanAddOnSymbolFromString(const std::string& name)
 {
 	if (name == "IGNORE") {
@@ -222,6 +233,27 @@ static jobject CreateEnum(JNIEnv* env, const char* enumClass,
 	return env->GetStaticObjectField(cls, fidCT);
 }
 
+static jobject CreateErrorType(JNIEnv* env, Error::Type errorType)
+{
+	return CreateEnum(env,
+		"de/markusfisch/android/zxingcpp/ZxingCpp$ErrorType",
+		JavaErrorTypeName(errorType));
+}
+
+static jobject CreateError(JNIEnv* env, const Error& error)
+{
+	jclass cls = env->FindClass(
+		"de/markusfisch/android/zxingcpp/ZxingCpp$Error");
+	auto constructor = env->GetMethodID(
+		cls, "<init>",
+		"(Lde/markusfisch/android/zxingcpp/ZxingCpp$ErrorType;"
+		"Ljava/lang/String;)V");
+	return env->NewObject(
+		cls, constructor,
+		CreateErrorType(env, error.type()),
+		C2JString(env, error.msg()));
+}
+
 static jobject CreateContentType(JNIEnv* env, ContentType contentType)
 {
 	return CreateEnum(env,
@@ -256,7 +288,8 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"Z"
 		"I"
 		"Ljava/lang/String;"
-		"Lde/markusfisch/android/zxingcpp/ZxingCpp$GTIN;)V");
+		"Lde/markusfisch/android/zxingcpp/ZxingCpp$GTIN;"
+		"Lde/markusfisch/android/zxingcpp/ZxingCpp$Error;)V");
 	return env->NewObject(
 		cls, constructor,
 		CreateFormat(env, result.format()),
@@ -273,7 +306,8 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		result.readerInit(),
 		result.lineCount(),
 		C2JString(env, result.version()),
-		CreateOptionalGTIN(env, result));
+		CreateOptionalGTIN(env, result),
+		result.error() ? CreateError(env, result.error()) : nullptr);
 }
 
 static jobject Read(JNIEnv* env, ImageView image, DecodeHints decodeHints)
