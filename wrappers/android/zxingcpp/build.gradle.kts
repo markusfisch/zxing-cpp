@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    `maven-publish`
 }
 
 android {
@@ -26,6 +27,8 @@ android {
                 arguments("-DCMAKE_BUILD_TYPE=RelWithDebInfo")
             }
         }
+
+        consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {
         sourceCompatibility(JavaVersion.VERSION_1_8)
@@ -50,4 +53,18 @@ kotlin {
 
 dependencies {
     implementation(libs.androidx.camera.core)
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.zxingcpp"
+                artifactId = "zxingcpp"
+                version = "2.1.0"
+
+                afterEvaluate {
+                    from(components["release"])
+                }
+        }
+    }
 }
