@@ -363,38 +363,37 @@ static std::string GetEnumField(JNIEnv* env, jclass hintClass, jobject hints,
 	return J2CString(env, s);
 }
 
-static std::string JoinFormats(JNIEnv* env, jclass hintClass, jobject hints)
+static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 {
-	const char* setPath = "java/util/Set";
-	jclass setClass = env->FindClass(setPath);
-	jobjectArray array = (jobjectArray) env->CallObjectMethod(
-		env->GetObjectField(hints, env->GetFieldID(hintClass, "formats",
-			("L" + std::string(setPath) + ";").c_str())),
-		env->GetMethodID(setClass, "toArray", "()[Ljava/lang/Object;"));
-	if (!array) {
-		return "";
+	auto formatArray = (jobjectArray) env->CallObjectMethod(
+		env->GetObjectField(
+			hints,
+			env->GetFieldID(hintClass, "formats", "Ljava/util/Set;")),
+		env->GetMethodID(
+			env->FindClass("java/util/Set"),
+			"toArray",
+			"()[Ljava/lang/Object;"));
+	if (!formatArray) {
+		return {};
 	}
-	jclass formatClass = env->FindClass(
-		"de/markusfisch/android/zxingcpp/ZxingCpp$Format");
-	int size = env->GetArrayLength(array);
-	std::string s;
-	for (int i = 0; i < size; ++i) {
-		jobject format = env->GetObjectArrayElement(array, i);
-		jstring name = (jstring) env->CallObjectMethod(format,
-			env->GetMethodID(formatClass, "toString", "()Ljava/lang/String;"));
-		if (!s.empty()) {
-			s += ",";
-		}
-		s += J2CString(env, name);
+	auto name = env->GetMethodID(
+		env->FindClass("de/markusfisch/android/zxingcpp/ZxingCpp$Format"),
+		"name", "()Ljava/lang/String;");
+	BarcodeFormats formats;
+	for (int i = 0, size = env->GetArrayLength(formatArray); i < size; ++i) {
+		auto s = (jstring) env->CallObjectMethod(
+			env->GetObjectArrayElement(formatArray, i),
+			name);
+		formats |= BarcodeFormatFromString(J2CString(env, s));
 	}
-	return s;
+	return formats;
 }
 
 static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
 {
 	jclass cls = env->GetObjectClass(hints);
 	return DecodeHints()
-		.setFormats(BarcodeFormatsFromString(JoinFormats(env, cls, hints)))
+		.setFormats(GetFormats(env, cls, hints))
 		.setTryHarder(GetBooleanField(env, cls, hints, "tryHarder"))
 		.setTryRotate(GetBooleanField(env, cls, hints, "tryRotate"))
 		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
