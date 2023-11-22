@@ -27,6 +27,8 @@
 #include <exception>
 #include <stdexcept>
 
+#define PACKAGE "de/markusfisch/android/zxingcpp/ZxingCpp$"
+
 using namespace ZXing;
 
 static const char* JavaBarcodeFormatName(BarcodeFormat format)
@@ -150,7 +152,7 @@ static jbyteArray CreateByteArray(JNIEnv* env,
 static jobject CreateBitMatrix(JNIEnv* env, int width, int height,
 	jbyteArray data)
 {
-	jclass cls = env->FindClass("de/markusfisch/android/zxingcpp/ZxingCpp$BitMatrix");
+	jclass cls = env->FindClass(PACKAGE "BitMatrix");
 	auto constructor = env->GetMethodID(
 		cls, "<init>", "(II[B)V");
 	return env->NewObject(cls, constructor, width, height, data);
@@ -166,7 +168,7 @@ static jobject CreateGTIN(JNIEnv* env, const std::string& country,
 	const std::string& addOn, const std::string& price,
 	const std::string& issueNumber)
 {
-	jclass cls = env->FindClass("de/markusfisch/android/zxingcpp/ZxingCpp$GTIN");
+	jclass cls = env->FindClass(PACKAGE "GTIN");
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
 		"(Ljava/lang/String;"
@@ -212,8 +214,7 @@ static jobject CreateAndroidPoint(JNIEnv* env, const PointT<int>& point)
 
 static jobject CreatePosition(JNIEnv* env, const Position& position)
 {
-	jclass cls = env->FindClass(
-		"de/markusfisch/android/zxingcpp/ZxingCpp$Position");
+	jclass cls = env->FindClass(PACKAGE "Position");
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
 		"(Landroid/graphics/Point;"
@@ -241,18 +242,15 @@ static jobject CreateEnum(JNIEnv* env, const char* enumClass,
 
 static jobject CreateErrorType(JNIEnv* env, Error::Type errorType)
 {
-	return CreateEnum(env,
-		"de/markusfisch/android/zxingcpp/ZxingCpp$ErrorType",
-		JavaErrorTypeName(errorType));
+	return CreateEnum(env, PACKAGE "ErrorType", JavaErrorTypeName(errorType));
 }
 
 static jobject CreateError(JNIEnv* env, const Error& error)
 {
-	jclass cls = env->FindClass(
-		"de/markusfisch/android/zxingcpp/ZxingCpp$Error");
+	jclass cls = env->FindClass(PACKAGE "Error");
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
-		"(Lde/markusfisch/android/zxingcpp/ZxingCpp$ErrorType;"
+		"(L" PACKAGE "ErrorType;"
 		"Ljava/lang/String;)V");
 	return env->NewObject(
 		cls, constructor,
@@ -262,28 +260,24 @@ static jobject CreateError(JNIEnv* env, const Error& error)
 
 static jobject CreateContentType(JNIEnv* env, ContentType contentType)
 {
-	return CreateEnum(env,
-		"de/markusfisch/android/zxingcpp/ZxingCpp$ContentType",
+	return CreateEnum(env, PACKAGE "ContentType",
 		JavaContentTypeName(contentType));
 }
 
 static jobject CreateFormat(JNIEnv* env, BarcodeFormat format)
 {
-	return CreateEnum(env,
-		"de/markusfisch/android/zxingcpp/ZxingCpp$Format",
-		JavaBarcodeFormatName(format));
+	return CreateEnum(env, PACKAGE "Format", JavaBarcodeFormatName(format));
 }
 
 static jobject CreateResult(JNIEnv* env, const Result& result)
 {
-	jclass cls = env->FindClass(
-		"de/markusfisch/android/zxingcpp/ZxingCpp$Result");
+	jclass cls = env->FindClass(PACKAGE "Result");
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
-		"(Lde/markusfisch/android/zxingcpp/ZxingCpp$Format;"
-		"Lde/markusfisch/android/zxingcpp/ZxingCpp$ContentType;"
+		"(L" PACKAGE "Format;"
+		"L" PACKAGE "ContentType;"
 		"Ljava/lang/String;"
-		"Lde/markusfisch/android/zxingcpp/ZxingCpp$Position;"
+		"L" PACKAGE "Position;"
 		"I"
 		"[B"
 		"Ljava/lang/String;"
@@ -294,8 +288,8 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"Z"
 		"I"
 		"Ljava/lang/String;"
-		"Lde/markusfisch/android/zxingcpp/ZxingCpp$GTIN;"
-		"Lde/markusfisch/android/zxingcpp/ZxingCpp$Error;)V");
+		"L" PACKAGE "GTIN;"
+		"L" PACKAGE "Error;)V");
 	return env->NewObject(
 		cls, constructor,
 		CreateFormat(env, result.format()),
@@ -377,7 +371,7 @@ static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 		return {};
 	}
 	auto name = env->GetMethodID(
-		env->FindClass("de/markusfisch/android/zxingcpp/ZxingCpp$Format"),
+		env->FindClass(PACKAGE "Format"),
 		"name", "()Ljava/lang/String;");
 	BarcodeFormats formats;
 	for (int i = 0, size = env->GetArrayLength(formatArray); i < size; ++i) {
@@ -406,14 +400,11 @@ static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
 		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
 		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
 		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints,
-			"de/markusfisch/android/zxingcpp/ZxingCpp$EanAddOnSymbol",
-			"eanAddOnSymbol")))
+			PACKAGE "EanAddOnSymbol", "eanAddOnSymbol")))
 		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints,
-			"de/markusfisch/android/zxingcpp/ZxingCpp$Binarizer",
-			"binarizer")))
+			PACKAGE "Binarizer", "binarizer")))
 		.setTextMode(TextModeFromString(GetEnumField(env, cls, hints,
-			"de/markusfisch/android/zxingcpp/ZxingCpp$TextMode",
-			"textMode")))
+			PACKAGE "TextMode", "textMode")))
 		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
 		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
 		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"));
