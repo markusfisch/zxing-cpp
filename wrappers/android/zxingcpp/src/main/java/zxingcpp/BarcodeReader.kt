@@ -24,7 +24,7 @@ import android.os.Build
 import androidx.camera.core.ImageProxy
 import java.nio.ByteBuffer
 
-public object ZXingCpp {
+public class BarcodeReader(public var options: Options = Options()) {
 	private val supportedYUVFormats: List<Int> =
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 			listOf(ImageFormat.YUV_420_888, ImageFormat.YUV_422_888, ImageFormat.YUV_444_888)
@@ -33,7 +33,7 @@ public object ZXingCpp {
 		}
 
 	init {
-		System.loadLibrary("zxing_android")
+		System.loadLibrary("zxingcpp_android")
 	}
 
 	// Enumerates barcode formats known to this package.
@@ -63,7 +63,7 @@ public object ZXingCpp {
 		FORMAT, CHECKSUM, UNSUPPORTED
 	}
 
-	public data class DecodeHints(
+	public data class Options(
 		var formats: Set<Format> = setOf(),
 		var tryHarder: Boolean = false,
 		var tryRotate: Boolean = false,
@@ -115,7 +115,7 @@ public object ZXingCpp {
 		val time: Int // for development/debug purposes only
 	)
 
-	public fun read(image: ImageProxy, hints: DecodeHints): List<Result> {
+	public fun read(image: ImageProxy): List<Result> {
 		check(image.format in supportedYUVFormats) {
 			"Invalid image format: ${image.format}. Must be one of: $supportedYUVFormats"
 		}
@@ -128,23 +128,23 @@ public object ZXingCpp {
 			image.cropRect.width(),
 			image.cropRect.height(),
 			image.imageInfo.rotationDegrees,
-			hints
+			options
 		)
 	}
 
 	public fun read(
-		bitmap: Bitmap, hints: DecodeHints, cropRect: Rect = Rect(), rotation: Int = 0
+		bitmap: Bitmap, cropRect: Rect = Rect(), rotation: Int = 0
 	): List<Result> {
 		return readBitmap(
-			bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height(), rotation, hints
+			bitmap, cropRect.left, cropRect.top, cropRect.width(), cropRect.height(), rotation, options
 		)
 	}
 
 	private external fun readYBuffer(
-		yBuffer: ByteBuffer, rowStride: Int, left: Int, top: Int, width: Int, height: Int, rotation: Int, hints: DecodeHints
+		yBuffer: ByteBuffer, rowStride: Int, left: Int, top: Int, width: Int, height: Int, rotation: Int, hints: Options
 	): List<Result>
 
 	private external fun readBitmap(
-		bitmap: Bitmap, left: Int, top: Int, width: Int, height: Int, rotation: Int, hints: DecodeHints
+		bitmap: Bitmap, left: Int, top: Int, width: Int, height: Int, rotation: Int, hints: Options
 	): List<Result>
 }

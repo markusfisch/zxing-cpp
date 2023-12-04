@@ -54,9 +54,8 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.concurrent.Executors
 import zxingcpp.app.databinding.ActivityCameraBinding
-import zxingcpp.ZXingCpp
-import zxingcpp.ZXingCpp.Format
-
+import zxingcpp.BarcodeReader
+import zxingcpp.BarcodeReader.Format.*
 
 class MainActivity : AppCompatActivity() {
 	private lateinit var binding: ActivityCameraBinding
@@ -65,7 +64,6 @@ class MainActivity : AppCompatActivity() {
 	private val permissions = mutableListOf(Manifest.permission.CAMERA)
 	private val permissionsRequestCode = 1
 	private val beeper = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 50)
-	private val decodeHints = ZXingCpp.DecodeHints()
 
 	private var lastText = String()
 	private var doSaveImage: Boolean = false
@@ -152,6 +150,8 @@ class MainActivity : AppCompatActivity() {
 			var runtimes: Long = 0
 			var runtime2: Long = 0
 			val readerJava = MultiFormatReader()
+			val readerCpp = BarcodeReader()
+
 
 			// Create a new camera selector each time, enforcing lens facing
 			val cameraSelector =
@@ -238,18 +238,18 @@ class MainActivity : AppCompatActivity() {
 						if (e.toString() != "com.google.zxing.NotFoundException") e.toString() else ""
 					}
 				} else {
-					decodeHints.apply {
-						formats = if (binding.qrcode.isChecked) setOf(Format.QR_CODE) else setOf()
+					readerCpp.options.apply {
+						formats = if (binding.qrcode.isChecked) setOf(QR_CODE) else setOf()
 						tryHarder = binding.tryHarder.isChecked
 						tryRotate = binding.tryRotate.isChecked
 						tryInvert = binding.tryInvert.isChecked
 						tryDownscale = binding.tryDownscale.isChecked
-						maxNumberOfSymbols = if (binding.single.isChecked) 1 else 255
+						maxNumberOfSymbols = if (binding.multiSymbol.isChecked) 255 else 1
 					}
 
 					resultText = try {
 						image.use {
-							ZXingCpp.read(it, decodeHints)
+							readerCpp.read(it)
 						}.apply {
 							runtime2 += firstOrNull()?.time ?: 0
 						}.joinToString("\n") { result ->
@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity() {
 								})
 							}
 							"${result.format} (${result.contentType}): ${
-								if (result.contentType != ZXingCpp.ContentType.BINARY) {
+								if (result.contentType != BarcodeReader.ContentType.BINARY) {
 									result.text
 								} else {
 									result.bytes!!.joinToString(separator = "") { v -> "%02x".format(v) }
