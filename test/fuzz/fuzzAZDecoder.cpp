@@ -7,10 +7,13 @@
 #include <stddef.h>
 
 #include "BitArray.h"
-#include "Error.h"
-#include "oned/ODDataBarExpandedBitDecoder.h"
+#include "DecoderResult.h"
 
 using namespace ZXing;
+
+namespace ZXing::Aztec {
+DecoderResult Decode(const BitArray& bits);
+}
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
@@ -18,14 +21,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 		return 0;
 
 	BitArray bits;
-	for (size_t i = 0; i < size; ++i)
+	for (size_t i = 1; i < size - 1; ++i)
 		bits.appendBits(data[i], 8);
 
-	try {
-		OneD::DataBar::DecodeExpandedBits(bits);
-	} catch (std::out_of_range) {
-	} catch (Error) {
-	}
+	bits.appendBits(data[size - 1], (data[0] & 0x7) + 1);
+
+	Aztec::Decode(bits);
 
 	return 0;
 }
