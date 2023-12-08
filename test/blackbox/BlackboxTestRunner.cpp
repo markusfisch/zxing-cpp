@@ -228,7 +228,9 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 			if (tc.name.empty())
 				break;
 			auto startTime = std::chrono::steady_clock::now();
-			hints.setTryDownscale(false);
+			hints.setTryDownscale(tc.name == "slow_");
+			hints.setDownscaleFactor(2);
+			hints.setDownscaleThreshold(180);
 			hints.setTryHarder(tc.name == "slow");
 			hints.setTryRotate(tc.name == "slow");
 			hints.setTryInvert(tc.name == "slow");
@@ -611,12 +613,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 9, 0, pure },
 		});
 
-		runTests("rmqrcode-1", "rMQRCode", 2, {
-			{  1,  2, 0   },
-			{  1,  2, 90  },
-			{  1,  2, 180 },
-			{  1,  2, 270 },
-			{ 1, 1, pure },
+		runTests("rmqrcode-1", "rMQRCode", 3, {
+			{  2,  3, 0   },
+			{  2,  3, 90  },
+			{  2,  3, 180 },
+			{  2,  3, 270 },
+			{  2,  2, pure },
 		});
 
 		runTests("pdf417-1", "PDF417", 17, {
