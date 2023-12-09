@@ -37,9 +37,9 @@ afterEvaluate {
 		publications {
 			release(MavenPublication) {
 				from components.release
-				groupId = 'com.github.nu-book'
-				artifactId = 'final'
-				version = '1.2.1'
+				groupId = 'io.github.zxing-cpp'
+				artifactId = 'android'
+				version = '2.2.0'
 			}
 		}
 	}
