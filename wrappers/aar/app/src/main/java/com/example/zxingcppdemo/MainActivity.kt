@@ -38,7 +38,7 @@ import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import de.markusfisch.android.zxingcpp.ZxingCpp
 import de.markusfisch.android.zxingcpp.ZxingCpp.ReaderOptions
-import de.markusfisch.android.zxingcpp.ZxingCpp.Format
+import de.markusfisch.android.zxingcpp.ZxingCpp.BarcodeFormat
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -203,7 +203,7 @@ class MainActivity : AppCompatActivity() {
 
 		val hints = mutableMapOf<DecodeHintType, Any>()
 		if (chipQrCode.isChecked) {
-			hints[DecodeHintType.POSSIBLE_FORMATS] = arrayListOf(BarcodeFormat.QR_CODE)
+			hints[DecodeHintType.POSSIBLE_FORMATS] = arrayListOf(com.google.zxing.BarcodeFormat.QR_CODE)
 		}
 		if (chipTryHarder.isChecked) {
 			hints[DecodeHintType.TRY_HARDER] = true
@@ -238,7 +238,7 @@ class MainActivity : AppCompatActivity() {
 	private fun scanCpp(image: ImageProxy, cropRect: Rect): String = try {
 		readerOptions.apply {
 			formats = if (chipQrCode.isChecked) {
-				setOf(Format.QR_CODE)
+				setOf(BarcodeFormat.QR_CODE)
 			} else {
 				setOf()
 			}

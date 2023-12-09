@@ -3,7 +3,7 @@ package com.example.zxingcppdemo
 import android.graphics.Rect
 import androidx.test.runner.AndroidJUnit4
 import de.markusfisch.android.zxingcpp.ZxingCpp
-import de.markusfisch.android.zxingcpp.ZxingCpp.Format
+import de.markusfisch.android.zxingcpp.ZxingCpp.BarcodeFormat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -15,11 +15,11 @@ class ZxingCppTest {
 	fun encodeDecode() {
 		encodeDecodeString(
 			"The quick brown fox jumps over the lazy dog.",
-			Format.QR_CODE
+			BarcodeFormat.QR_CODE
 		)
 		encodeDecodeString(
 			"This is test 😁",
-			Format.DATA_MATRIX
+			BarcodeFormat.DATA_MATRIX
 		)
 	}
 
@@ -30,13 +30,13 @@ class ZxingCppTest {
 		for (i in 0 until size) {
 			bytes[i] = (i % 256).toByte()
 		}
-		encodeDecodeByteArray(bytes, Format.QR_CODE)
-		encodeDecodeByteArray(bytes, Format.AZTEC)
-		encodeDecodeByteArray(bytes, Format.DATA_MATRIX)
+		encodeDecodeByteArray(bytes, BarcodeFormat.QR_CODE)
+		encodeDecodeByteArray(bytes, BarcodeFormat.AZTEC)
+		encodeDecodeByteArray(bytes, BarcodeFormat.DATA_MATRIX)
 	}
 }
 
-fun encodeDecodeString(text: String, format: Format) {
+fun encodeDecodeString(text: String, format: BarcodeFormat) {
 	val bitmap = ZxingCpp.encodeAsBitmap(text, format)
 	assertNotNull(bitmap)
 	val results = bitmap.run {
@@ -51,7 +51,7 @@ fun encodeDecodeString(text: String, format: Format) {
 	assertEquals(text, result?.text)
 }
 
-fun encodeDecodeByteArray(bytes: ByteArray, format: Format) {
+fun encodeDecodeByteArray(bytes: ByteArray, format: BarcodeFormat) {
 	val bitmap = ZxingCpp.encodeAsBitmap(bytes, format)
 	assertNotNull(bitmap)
 	val results = bitmap.run {

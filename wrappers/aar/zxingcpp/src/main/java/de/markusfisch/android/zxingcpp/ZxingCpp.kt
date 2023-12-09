@@ -39,7 +39,7 @@ object ZxingCpp {
 		FORMAT, CHECKSUM, UNSUPPORTED
 	}
 
-	enum class Format {
+	enum class BarcodeFormat {
 		NONE,
 		AZTEC,
 		CODABAR,
@@ -65,7 +65,7 @@ object ZxingCpp {
 	}
 
 	data class ReaderOptions(
-		var formats: Set<Format> = setOf(),
+		var formats: Set<BarcodeFormat> = setOf(),
 		var tryHarder: Boolean = true,
 		var tryRotate: Boolean = true,
 		var tryInvert: Boolean = true,
@@ -106,7 +106,7 @@ object ZxingCpp {
 	)
 
 	data class Result(
-		val format: Format,
+		val format: BarcodeFormat,
 		val contentType: ContentType,
 		val text: String,
 		val position: Position,
@@ -270,7 +270,7 @@ xmlns="http://www.w3.org/2000/svg">
 
 	fun <T> encodeAsBitmap(
 		content: T,
-		format: Format,
+		format: BarcodeFormat,
 		width: Int = 0,
 		height: Int = 0,
 		margin: Int = -1,
@@ -285,7 +285,7 @@ xmlns="http://www.w3.org/2000/svg">
 
 	fun <T> encodeAsSvg(
 		content: T,
-		format: Format,
+		format: BarcodeFormat,
 		margin: Int = -1,
 		ecLevel: Int = -1
 	): String = content.encode(
@@ -296,7 +296,7 @@ xmlns="http://www.w3.org/2000/svg">
 
 	fun <T> encodeAsText(
 		content: T,
-		format: Format,
+		format: BarcodeFormat,
 		margin: Int = -1,
 		ecLevel: Int = -1,
 		inverted: Boolean = false

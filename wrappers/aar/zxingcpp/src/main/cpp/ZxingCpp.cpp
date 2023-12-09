@@ -264,9 +264,10 @@ static jobject CreateContentType(JNIEnv* env, ContentType contentType)
 		JavaContentTypeName(contentType));
 }
 
-static jobject CreateFormat(JNIEnv* env, BarcodeFormat format)
+static jobject CreateBarcodeFormat(JNIEnv* env, BarcodeFormat format)
 {
-	return CreateEnum(env, PACKAGE "Format", JavaBarcodeFormatName(format));
+	return CreateEnum(env, PACKAGE "BarcodeFormat",
+		JavaBarcodeFormatName(format));
 }
 
 static jobject CreateResult(JNIEnv* env, const Result& result)
@@ -274,7 +275,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 	jclass cls = env->FindClass(PACKAGE "Result");
 	auto constructor = env->GetMethodID(
 		cls, "<init>",
-		"(L" PACKAGE "Format;"
+		"(L" PACKAGE "BarcodeFormat;"
 		"L" PACKAGE "ContentType;"
 		"Ljava/lang/String;"
 		"L" PACKAGE "Position;"
@@ -292,7 +293,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"L" PACKAGE "Error;)V");
 	return env->NewObject(
 		cls, constructor,
-		CreateFormat(env, result.format()),
+		CreateBarcodeFormat(env, result.format()),
 		CreateContentType(env, result.contentType()),
 		C2JString(env, result.text()),
 		CreatePosition(env, result.position()),
@@ -371,7 +372,7 @@ static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 		return {};
 	}
 	auto name = env->GetMethodID(
-		env->FindClass(PACKAGE "Format"),
+		env->FindClass(PACKAGE "BarcodeFormat"),
 		"name", "()Ljava/lang/String;");
 	BarcodeFormats formats;
 	for (int i = 0, size = env->GetArrayLength(formatArray); i < size; ++i) {
