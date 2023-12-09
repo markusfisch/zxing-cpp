@@ -10,6 +10,6 @@ set(BUILD_WRITERS ON)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../core ZXing EXCLUDE_FROM_ALL)
 
-add_library(zxing SHARED ZxingCpp.cpp JNIUtils.cpp)
+add_library(zxing SHARED ZxingCpp.cpp)
 
 target_link_libraries(zxing PRIVATE ZXing::ZXing jnigraphics)

@@ -17,7 +17,6 @@
 #include "BitMatrix.h"
 #include "CharacterSet.h"
 #include "GTIN.h"
-#include "JNIUtils.h"
 #include "ReadBarcode.h"
 #include "MultiFormatWriter.h"
 #include "Utf.h"
@@ -26,10 +25,30 @@
 #include <chrono>
 #include <exception>
 #include <stdexcept>
+#include <string>
 
 #define PACKAGE "de/markusfisch/android/zxingcpp/ZxingCpp$"
 
 using namespace ZXing;
+
+static jstring C2JString(JNIEnv* env, const std::string& str)
+{
+	return env->NewStringUTF(str.c_str());
+}
+
+static std::string J2CString(JNIEnv* env, jstring str)
+{
+	// Buffer size must be in bytes.
+	const jsize size = env->GetStringUTFLength(str);
+	std::string res(size, 0);
+
+	// Translates 'len' number of Unicode characters into modified
+	// UTF-8 encoding and place the result in the given buffer.
+	const jsize len = env->GetStringLength(str);
+	env->GetStringUTFRegion(str, 0, len, res.data());
+
+	return res;
+}
 
 static const char* JavaBarcodeFormatName(BarcodeFormat format)
 {
