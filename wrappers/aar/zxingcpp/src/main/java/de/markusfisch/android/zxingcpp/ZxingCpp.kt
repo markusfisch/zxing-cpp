@@ -56,6 +56,7 @@ object ZxingCpp {
 		PDF_417,
 		QR_CODE,
 		MICRO_QR_CODE,
+		RMQR_CODE,
 		UPC_A,
 		UPC_E,
 	}
