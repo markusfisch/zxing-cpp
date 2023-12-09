@@ -310,10 +310,10 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		result.error() ? CreateError(env, result.error()) : nullptr);
 }
 
-static jobject Read(JNIEnv* env, ImageView image, DecodeHints decodeHints)
+static jobject Read(JNIEnv* env, ImageView image, ReaderOptions options)
 {
 	try {
-		auto results = ReadBarcodes(image, decodeHints);
+		auto results = ReadBarcodes(image, options);
 		if (!results.empty()) {
 			// Only allocate when something is found.
 			auto cls = env->FindClass("java/util/ArrayList");
@@ -383,10 +383,10 @@ static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 	return formats;
 }
 
-static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
+static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
 {
 	jclass cls = env->GetObjectClass(hints);
-	return DecodeHints()
+	return ReaderOptions()
 		.setFormats(GetFormats(env, cls, hints))
 		.setTryHarder(GetBooleanField(env, cls, hints, "tryHarder"))
 		.setTryRotate(GetBooleanField(env, cls, hints, "tryRotate"))
@@ -427,7 +427,7 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readYBuffer(
 		rowStride
 	}.rotated(rotation);
 
-	return Read(env, image, CreateDecodeHints(env, hints));
+	return Read(env, image, CreateReaderOptions(env, hints));
 }
 
 extern "C" JNIEXPORT jobject JNICALL
@@ -446,7 +446,7 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readByteArray(
 		rowStride
 	}.rotated(rotation);
 
-	auto result = Read(env, image, CreateDecodeHints(env, hints));
+	auto result = Read(env, image, CreateReaderOptions(env, hints));
 	env->ReleaseByteArrayElements(yuvData, pixels, 0);
 
 	return result;
@@ -505,7 +505,7 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readBitmap(
 		(int)bmInfo.stride
 	}.cropped(left, top, width, height).rotated(rotation);
 
-	return Read(env, image, CreateDecodeHints(env, hints));
+	return Read(env, image, CreateReaderOptions(env, hints));
 }
 
 static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet encoding,

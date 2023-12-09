@@ -64,7 +64,7 @@ object ZxingCpp {
 		PLAIN, ECI, HRI, HEX, ESCAPED
 	}
 
-	data class DecodeHints(
+	data class ReaderOptions(
 		var formats: Set<Format> = setOf(),
 		var tryHarder: Boolean = true,
 		var tryRotate: Boolean = true,
@@ -129,14 +129,14 @@ object ZxingCpp {
 		rowStride: Int,
 		cropRect: Rect,
 		rotation: Int = 0,
-		decodeHints: DecodeHints = DecodeHints(),
+		options: ReaderOptions = ReaderOptions(),
 	): List<Result>? = readYBuffer(
 		yBuffer,
 		rowStride,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
 		rotation,
-		decodeHints,
+		options,
 	)
 
 	external fun readYBuffer(
@@ -145,7 +145,7 @@ object ZxingCpp {
 		left: Int, top: Int,
 		width: Int, height: Int,
 		rotation: Int,
-		decodeHints: DecodeHints,
+		options: ReaderOptions,
 	): List<Result>?
 
 	fun readByteArray(
@@ -153,14 +153,14 @@ object ZxingCpp {
 		rowStride: Int,
 		cropRect: Rect,
 		rotation: Int = 0,
-		decodeHints: DecodeHints = DecodeHints(),
+		options: ReaderOptions = ReaderOptions(),
 	): List<Result>? = readByteArray(
 		yuvData,
 		rowStride,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
 		rotation,
-		decodeHints,
+		options,
 	)
 
 	external fun readByteArray(
@@ -169,20 +169,20 @@ object ZxingCpp {
 		left: Int, top: Int,
 		width: Int, height: Int,
 		rotation: Int,
-		decodeHints: DecodeHints,
+		options: ReaderOptions,
 	): List<Result>?
 
 	fun readBitmap(
 		bitmap: Bitmap,
 		cropRect: Rect,
 		rotation: Int = 0,
-		decodeHints: DecodeHints = DecodeHints(),
+		options: ReaderOptions = ReaderOptions(),
 	): List<Result>? = readBitmap(
 		bitmap,
 		cropRect.left, cropRect.top,
 		cropRect.width(), cropRect.height(),
 		rotation,
-		decodeHints,
+		options,
 	)
 
 	external fun readBitmap(
@@ -190,7 +190,7 @@ object ZxingCpp {
 		left: Int, top: Int,
 		width: Int, height: Int,
 		rotation: Int,
-		decodeHints: DecodeHints,
+		options: ReaderOptions,
 	): List<Result>?
 
 	data class BitMatrix(
