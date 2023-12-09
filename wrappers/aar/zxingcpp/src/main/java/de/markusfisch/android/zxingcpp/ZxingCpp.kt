@@ -345,6 +345,6 @@ xmlns="http://www.w3.org/2000/svg">
 	): BitMatrix
 
 	init {
-		System.loadLibrary("zxing")
+		System.loadLibrary("zxingcpp_android")
 	}
 }
