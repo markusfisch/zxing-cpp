@@ -379,6 +379,11 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 19, 0, pure },
 		});
 
+		runTests("dxfilmedge-1", "DXFilmEdge", 3, {
+			{ 1, 3, 0 },
+			{ 0, 3, 180 },
+		});
+
 		runTests("codabar-1", "Codabar", 11, {
 			{ 11, 11, 0   },
 			{ 11, 11, 180 },

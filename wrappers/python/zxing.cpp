@@ -191,6 +191,7 @@ PYBIND11_MODULE(zxingcpp, m)
 		.value("RMQRCode", BarcodeFormat::RMQRCode)
 		.value("DataBar", BarcodeFormat::DataBar)
 		.value("DataBarExpanded", BarcodeFormat::DataBarExpanded)
+		.value("DXFilmEdge", BarcodeFormat::DXFilmEdge)
 		.value("UPCA", BarcodeFormat::UPCA)
 		.value("UPCE", BarcodeFormat::UPCE)
 		// use upper case 'NONE' because 'None' is a reserved identifier in python

@@ -105,7 +105,7 @@ if (BUILD_READERS)
         src/Content.h
         src/Content.cpp
         src/DecodeHints.h
-        src/DecodeHints.cpp
+        $<$<BOOL:${BUILD_SHARED_LIBS}>:src/DecodeHints.cpp> # [[deprecated]]
         src/DecoderResult.h
         src/DetectorResult.h
         src/Error.h
@@ -289,6 +289,8 @@ if (BUILD_READERS)
         src/oned/ODDataBarExpandedBitDecoder.cpp
         src/oned/ODDataBarExpandedReader.h
         src/oned/ODDataBarExpandedReader.cpp
+        src/oned/ODDXFilmEdgeReader.h
+        src/oned/ODDXFilmEdgeReader.cpp
         src/oned/ODITFReader.h
         src/oned/ODITFReader.cpp
         src/oned/ODMultiUPCEANReader.h
@@ -483,6 +485,10 @@ if (PROJECT_VERSION)
 endif()
 
 set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
+
+target_precompile_headers(ZXing PRIVATE ${PUBLIC_HEADERS})
+set_source_files_properties(src/libzueci/zueci.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+set_source_files_properties(src/DecodeHints.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 
 include (GNUInstallDirs)
 

@@ -34,6 +34,8 @@ ZXing::BarcodeFormat BarcodeFormatFromZXIFormat(ZXIFormat format) {
             return ZXing::BarcodeFormat::DataBarExpanded;
         case ZXIFormat::DATA_BAR:
             return ZXing::BarcodeFormat::DataBar;
+        case ZXIFormat::DX_FILM_EDGE:
+            return ZXing::BarcodeFormat::DXFilmEdge;
         case ZXIFormat::CODE_128:
             return ZXing::BarcodeFormat::Code128;
         case ZXIFormat::CODE_93:
@@ -75,6 +77,8 @@ ZXIFormat ZXIFormatFromBarcodeFormat(ZXing::BarcodeFormat format) {
             return ZXIFormat::DATA_BAR_EXPANDED;
         case ZXing::BarcodeFormat::DataMatrix:
             return ZXIFormat::DATA_MATRIX;
+        case ZXing::BarcodeFormat::DXFilmEdge:
+            return ZXIFormat::DX_FILM_EDGE;
         case ZXing::BarcodeFormat::EAN8:
             return ZXIFormat::EAN_8;
         case ZXing::BarcodeFormat::EAN13:
