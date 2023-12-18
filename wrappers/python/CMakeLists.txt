@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(ZXingPython)
 
 set (pybind11_git_repo https://github.com/pybind/pybind11.git)
-set (pybind11_git_rev v2.10.4)
+set (pybind11_git_rev v2.11.1)
 
 # check if we are called from the top-level ZXing project
 get_directory_property(hasParent PARENT_DIRECTORY)
@@ -24,6 +24,7 @@ if (NOT hasParent)
     endif()
 endif()
 
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED) # see https://github.com/pybind/pybind11/issues/4785
 zxing_add_package(pybind11 pybind11 ${pybind11_git_repo} ${pybind11_git_rev})
 
 # build the python module
@@ -31,7 +32,7 @@ pybind11_add_module(zxingcpp zxing.cpp)
 target_link_libraries(zxingcpp PRIVATE ZXing::ZXing)
 
 if (BUILD_READERS AND BUILD_WRITERS)
-    add_test(NAME PythonTest COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test.py -v)
+    add_test(NAME PythonTest COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test.py -v)
     set_property(TEST PythonTest PROPERTY ENVIRONMENT PYTHONPATH=$<TARGET_FILE_DIR:zxingcpp>)
 endif()
 
@@ -40,3 +41,4 @@ install(TARGETS zxingcpp
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
