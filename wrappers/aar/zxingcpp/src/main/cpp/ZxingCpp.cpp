@@ -414,21 +414,21 @@ static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
 		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
 		.setTryDownscale(GetBooleanField(env, cls, hints, "tryDownscale"))
 		.setIsPure(GetBooleanField(env, cls, hints, "isPure"))
+		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints,
+			PACKAGE "Binarizer", "binarizer")))
+		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
+		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"))
+		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
+		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
 		.setTryCode39ExtendedMode(GetBooleanField(env, cls, hints, "tryCode39ExtendedMode"))
 		.setValidateCode39CheckSum(GetBooleanField(env, cls, hints, "validateCode39CheckSum"))
 		.setValidateITFCheckSum(GetBooleanField(env, cls, hints, "validateITFCheckSum"))
 		.setReturnCodabarStartEnd(GetBooleanField(env, cls, hints, "returnCodabarStartEnd"))
 		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
-		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
 		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints,
 			PACKAGE "EanAddOnSymbol", "eanAddOnSymbol")))
-		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints,
-			PACKAGE "Binarizer", "binarizer")))
 		.setTextMode(TextModeFromString(GetEnumField(env, cls, hints,
-			PACKAGE "TextMode", "textMode")))
-		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
-		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
-		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"));
+			PACKAGE "TextMode", "textMode")));
 }
 
 extern "C" JNIEXPORT jobject JNICALL

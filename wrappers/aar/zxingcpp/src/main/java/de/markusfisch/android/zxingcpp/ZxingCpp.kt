@@ -72,18 +72,18 @@ object ZxingCpp {
 		var tryInvert: Boolean = true,
 		var tryDownscale: Boolean = true,
 		var isPure: Boolean = false,
+		var binarizer: Binarizer = Binarizer.LOCAL_AVERAGE,
+		var downscaleFactor: Int = 3,
+		var downscaleThreshold: Int = 500,
+		var minLineCount: Int = 2,
+		var maxNumberOfSymbols: Int = 0xff,
 		var tryCode39ExtendedMode: Boolean = false,
 		var validateCode39CheckSum: Boolean = false,
 		var validateITFCheckSum: Boolean = false,
 		var returnCodabarStartEnd: Boolean = false,
 		var returnErrors: Boolean = false,
-		var downscaleFactor: Int = 3,
 		var eanAddOnSymbol: EanAddOnSymbol = EanAddOnSymbol.IGNORE,
-		var binarizer: Binarizer = Binarizer.LOCAL_AVERAGE,
 		var textMode: TextMode = TextMode.HRI,
-		var minLineCount: Int = 2,
-		var maxNumberOfSymbols: Int = 0xff,
-		var downscaleThreshold: Int = 500
 	)
 
 	data class Error(
