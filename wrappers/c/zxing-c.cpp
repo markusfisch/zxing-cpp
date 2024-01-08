@@ -8,9 +8,17 @@
 
 #include "ReadBarcode.h"
 
+#include <cstdlib>
+#include <exception>
+#include <string>
+#include <string_view>
+#include <utility>
+
 using namespace ZXing;
 
-char* copy(std::string_view sv)
+static thread_local std::string lastErrorMsg;
+
+static char* copy(std::string_view sv)
 {
 	auto ret = (char*)malloc(sv.size() + 1);
 	if (ret) {
@@ -18,6 +26,25 @@ char* copy(std::string_view sv)
 		ret[sv.size()] = '\0';
 	}
 	return ret;
+}
+
+static Results ReadBarcodesAndSetLastError(const zxing_ImageView* iv, const zxing_ReaderOptions* opts, int maxSymbols)
+{
+	try {
+		if (iv) {
+			auto o = opts ? *opts : ReaderOptions{};
+			if (maxSymbols)
+				o.setMaxNumberOfSymbols(maxSymbols);
+			return ReadBarcodes(*iv, o);
+		} else
+			lastErrorMsg = "ImageView param is NULL";
+	} catch (std::exception& e) {
+		lastErrorMsg = e.what();
+	} catch (...) {
+		lastErrorMsg = "Unknown error";
+	}
+
+	return {};
 }
 
 extern "C" {
@@ -48,9 +75,13 @@ zxing_BarcodeFormats zxing_BarcodeFormatsFromString(const char* str)
 	try {
 		auto format = BarcodeFormatsFromString(str);
 		return static_cast<zxing_BarcodeFormats>(*reinterpret_cast<BarcodeFormat*>(&format));
+	} catch (std::exception& e) {
+		lastErrorMsg = e.what();
 	} catch (...) {
-		return zxing_BarcodeFormat_Invalid;
+		lastErrorMsg = "Unknown error";
 	}
+
+	return zxing_BarcodeFormat_Invalid;
 }
 
 zxing_BarcodeFormat zxing_BarcodeFormatFromString(const char* str)
@@ -211,13 +242,13 @@ bool zxing_Result_isMirrored(const zxing_Result* result)
 
 zxing_Result* zxing_ReadBarcode(const zxing_ImageView* iv, const zxing_ReaderOptions* opts)
 {
-	auto res = ReadBarcode(*iv, *opts);
-	return res.format() != BarcodeFormat::None ? new Result(std::move(res)) : NULL;
+	auto res = ReadBarcodesAndSetLastError(iv, opts, 1);
+	return !res.empty() ? new Result(std::move(res.front())) : NULL;
 }
 
 zxing_Results* zxing_ReadBarcodes(const zxing_ImageView* iv, const zxing_ReaderOptions* opts)
 {
-	auto res = ReadBarcodes(*iv, *opts);
+	auto res = ReadBarcodesAndSetLastError(iv, opts, 0);
 	return !res.empty() ? new Results(std::move(res)) : NULL;
 }
 
@@ -241,6 +272,14 @@ const zxing_Result* zxing_Results_at(const zxing_Results* results, int i)
 	if (!results || i < 0 || i >= Size(*results))
 		return NULL;
 	return &(*results)[i];
+}
+
+char* zxing_LastErrorMsg()
+{
+	if (lastErrorMsg.empty())
+		return NULL;
+
+	return copy(std::exchange(lastErrorMsg, {}));
 }
 
 } // extern "C"
