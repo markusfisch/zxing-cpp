@@ -26,6 +26,12 @@ android {
 			path file('src/main/cpp/CMakeLists.txt')
 		}
 	}
+
+	compileOptions {
+		// Required for Gradle 8.
+		sourceCompatibility = 17
+		targetCompatibility = 17
+	}
 }
 
 dependencies {
@@ -37,9 +43,9 @@ afterEvaluate {
 		publications {
 			release(MavenPublication) {
 				from components.release
-				groupId = 'io.github.zxing-cpp'
 				artifactId = 'android'
-				version = '2.2.0'
+				groupId = project.group.toString()
+				version = project.version.toString()
 			}
 		}
 	}
