@@ -37,7 +37,7 @@ dependencies {
 
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 	implementation 'androidx.appcompat:appcompat:1.6.1'
-	implementation 'com.google.android.material:material:1.10.0'
+	implementation 'com.google.android.material:material:1.11.0'
 
 	// CameraX
 	def camerax_version = "1.4.0-alpha02"
