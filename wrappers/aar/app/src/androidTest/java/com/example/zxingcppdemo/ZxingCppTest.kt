@@ -33,6 +33,7 @@ class ZxingCppTest {
 		encodeDecodeByteArray(bytes, BarcodeFormat.QR_CODE)
 		encodeDecodeByteArray(bytes, BarcodeFormat.AZTEC)
 		encodeDecodeByteArray(bytes, BarcodeFormat.DATA_MATRIX)
+		encodeDecodeByteArray(bytes, BarcodeFormat.PDF_417)
 	}
 }
 
