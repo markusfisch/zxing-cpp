@@ -11,6 +11,7 @@ mod tests;
 
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 #[allow(non_upper_case_globals)]
 mod bindings {
 	include!("bindings.rs");
@@ -264,6 +265,7 @@ impl ReaderOptions {
 	property!(binarizer, Binarizer);
 	property!(ean_add_on_symbol, EanAddOnSymbol);
 	property!(max_number_of_symbols, i32);
+	property!(min_line_count, i32);
 }
 
 pub struct ReaderResult(*mut zxing_Result);
@@ -271,6 +273,30 @@ pub struct ReaderResult(*mut zxing_Result);
 impl Drop for ReaderResult {
 	fn drop(&mut self) {
 		unsafe { zxing_Result_delete(self.0) }
+	}
+}
+
+pub type PointI = zxing_PointI;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Position {
+	pub top_left: PointI,
+	pub top_right: PointI,
+	pub bottom_right: PointI,
+	pub bottom_left: PointI,
+}
+
+impl Display for PointI {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}x{}", self.x, self.y)
+	}
+}
+
+impl Display for Position {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", unsafe {
+			c2r_str(zxing_PositionToString(self as *const Position as *const zxing_Position))
+		})
 	}
 }
 
@@ -290,13 +316,20 @@ impl ReaderResult {
 	getter!(ec_level, ecLevel, c2r_str, String);
 	getter!(error_message, errorMsg, c2r_str, String);
 	getter!(symbology_identifier, symbologyIdentifier, c2r_str, String);
+	getter!(position, position, transmute, Position);
 	getter!(orientation, orientation, transmute, i32);
+	getter!(has_eci, hasECI, transmute, bool);
 	getter!(is_inverted, isInverted, transmute, bool);
 	getter!(is_mirrored, isMirrored, transmute, bool);
+	getter!(line_count, lineCount, transmute, i32);
 
 	pub fn bytes(&self) -> Vec<u8> {
 		let mut len: c_int = 0;
 		unsafe { c2r_vec(zxing_Result_bytes(self.0, &mut len), len) }
+	}
+	pub fn bytes_eci(&self) -> Vec<u8> {
+		let mut len: c_int = 0;
+		unsafe { c2r_vec(zxing_Result_bytesECI(self.0, &mut len), len) }
 	}
 }
 
