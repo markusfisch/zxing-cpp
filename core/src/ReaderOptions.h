@@ -96,10 +96,10 @@ public:
 #endif
 	{}
 
-#define ZX_PROPERTY(TYPE, GETTER, SETTER) \
-	TYPE GETTER() const noexcept { return _##GETTER; } \
-	ReaderOptions& SETTER(TYPE v)& { return (void)(_##GETTER = std::move(v)), *this; } \
-	ReaderOptions&& SETTER(TYPE v)&& { return (void)(_##GETTER = std::move(v)), std::move(*this); }
+#define ZX_PROPERTY(TYPE, GETTER, SETTER, ...) \
+	__VA_ARGS__ TYPE GETTER() const noexcept { return _##GETTER; } \
+	__VA_ARGS__ ReaderOptions& SETTER(TYPE v)& { return (void)(_##GETTER = std::move(v)), *this; } \
+	__VA_ARGS__ ReaderOptions&& SETTER(TYPE v)&& { return (void)(_##GETTER = std::move(v)), std::move(*this); }
 
 	/// Specify a set of BarcodeFormats that should be searched for, the default is all supported formats.
 	ZX_PROPERTY(BarcodeFormats, formats, setFormats)
@@ -141,14 +141,14 @@ public:
 	/// The maximum number of symbols (barcodes) to detect / look for in the image with ReadBarcodes
 	ZX_PROPERTY(uint8_t, maxNumberOfSymbols, setMaxNumberOfSymbols)
 
-	/// If true, the Code-39 reader will try to read extended mode.
-	ZX_PROPERTY(bool, tryCode39ExtendedMode, setTryCode39ExtendedMode)
+	/// Deprecated / does nothing. The Code39 was decoded from full ASCII iff symbologyIdentifier()[2] >= '4'
+	ZX_PROPERTY(bool, tryCode39ExtendedMode, setTryCode39ExtendedMode, [[deprecated]])
 
-	/// Assume Code-39 codes employ a check digit and validate it.
-	ZX_PROPERTY(bool, validateCode39CheckSum, setValidateCode39CheckSum)
+	/// Deprecated / does nothing. The Code39 symbol has a valid checksum iff symbologyIdentifier()[2] is an odd digit
+	ZX_PROPERTY(bool, validateCode39CheckSum, setValidateCode39CheckSum, [[deprecated]])
 
-	/// Assume ITF codes employ a GS1 check digit and validate it.
-	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum)
+	/// Deprecated / does nothing. The ITF symbol has a valid checksum iff symbologyIdentifier()[2] == '1'.
+	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum, [[deprecated]])
 
 	/// If true, return the start and end chars in a Codabar barcode instead of stripping them.
 	ZX_PROPERTY(bool, returnCodabarStartEnd, setReturnCodabarStartEnd)
