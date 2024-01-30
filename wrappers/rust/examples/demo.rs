@@ -19,35 +19,36 @@ fn main() -> anyhow::Result<()> {
 
 	let image = image::open(&cli.filename)?;
 
-	#[cfg(feature = "image")]
-	let iv = ImageView::try_from(&image)?;
 	#[cfg(not(feature = "image"))]
 	let lum_img = image.into_luma8();
 	#[cfg(not(feature = "image"))]
 	let iv = ImageView::from_slice(&lum_img, lum_img.width(), lum_img.height(), ImageFormat::Lum)?;
 
 	let formats = barcode_formats_from_string(cli.formats.unwrap_or_default())?;
-	let opts = ReaderOptions::new()
+	let opts = ReaderOptions::default()
 		.formats(formats)
 		.try_harder(!cli.fast)
 		.try_invert(!cli.fast)
 		.try_rotate(!cli.fast);
 
-	let results = read_barcodes(&iv, &opts)?;
+	#[cfg(feature = "image")]
+	let barcodes = read_barcodes(&image, &opts)?;
+	#[cfg(not(feature = "image"))]
+	let barcodes = read_barcodes(iv, opts)?;
 
-	if results.is_empty() {
+	if barcodes.is_empty() {
 		println!("No barcode found.");
 	} else {
-		for result in results {
-			println!("Text: {}", result.text());
-			println!("Bytes: {:?}", result.bytes());
-			println!("Format: {}", result.format());
-			println!("Content: {}", result.content_type());
-			println!("Identifier: {}", result.symbology_identifier());
-			println!("EC Level: {}", result.ec_level());
-			println!("Error: {}", result.error_message());
-			println!("Orientation: {}", result.orientation());
-			println!("Position: {}", result.position());
+		for barcode in barcodes {
+			println!("Text:       {}", barcode.text());
+			println!("Bytes:      {:?}", barcode.bytes());
+			println!("Format:     {}", barcode.format());
+			println!("Content:    {}", barcode.content_type());
+			println!("Identifier: {}", barcode.symbology_identifier());
+			println!("EC Level:   {}", barcode.ec_level());
+			println!("Error:      {}", barcode.error_message());
+			println!("Rotation:   {}", barcode.orientation());
+			println!("Position:   {}", barcode.position());
 			println!();
 		}
 	}
