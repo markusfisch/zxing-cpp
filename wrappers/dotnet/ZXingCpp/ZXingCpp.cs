@@ -1,4 +1,9 @@
-﻿namespace ZXingCpp {
+/*
+* Copyright 2024 Axel Waggershauser
+*/
+// SPDX-License-Identifier: Apache-2.0
+
+namespace ZXingCpp {
 
 using System;
 using System.Runtime.InteropServices;
@@ -42,7 +47,7 @@ internal class Dll
 	[DllImport(DllName)] public static extern IntPtr zxing_PositionToString(Position position);
 	[DllImport(DllName)] public static extern BarcodeFormats zxing_BarcodeFormatsFromString(string str);
 
-	[DllImport(DllName)] public static extern IntPtr zxing_ImageView_new(byte[] data, int width, int height, ImageFormat format, int rowStride, int pixStride);
+	[DllImport(DllName)] public static extern IntPtr zxing_ImageView_new_checked(byte[] data, int size, int width, int height, ImageFormat format, int rowStride, int pixStride);
 	[DllImport(DllName)] public static extern void zxing_ImageView_delete(IntPtr iv);
 
 	[DllImport(DllName)] public static extern IntPtr zxing_ReadBarcodes(IntPtr iv, IntPtr opts);
@@ -123,8 +128,6 @@ public enum BarcodeFormats
 	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | DXFilmEdge | UPCA | UPCE,
 	MatrixCodes = Aztec | DataMatrix | MaxiCode | PDF417 | QRCode | MicroQRCode | RMQRCode,
 	Any         = LinearCodes | MatrixCodes,
-
-	Invalid = -1,
 };
 
 
@@ -167,25 +170,25 @@ public enum ImageFormat {
 
 public struct PointI
 {
-	public int x, y;
+	public int X, Y;
 };
 
 public struct Position
 {
-	public PointI topLeft, topRight, bottomRight, bottomLeft;
+	public PointI TopLeft, TopRight, BottomRight, BottomLeft;
 
-	public override string ToString() => Dll.MarshalAsString(Dll.zxing_PositionToString(this));
+	public override string ToString() => MarshalAsString(zxing_PositionToString(this));
 };
 
 public class ImageView
 {
 	internal IntPtr _d;
 
-	public ImageView(byte[] data, int width, int height, ImageFormat format, int rowStride, int pixStride)
+	public ImageView(byte[] data, int width, int height, ImageFormat format, int rowStride = 0, int pixStride = 0)
 	{
-		_d = zxing_ImageView_new(data, width, height, format, rowStride, pixStride);
+		_d = zxing_ImageView_new_checked(data, data.Length, width, height, format, rowStride, pixStride);
 		if (_d == IntPtr.Zero)
-			throw new Exception("Failed to create ImageView.");
+			throw new Exception(MarshalAsString(zxing_LastErrorMsg()));
 	}
 
 	~ImageView() => zxing_ImageView_delete(_d);
@@ -307,7 +310,7 @@ public class BarcodeReader : ReaderOptions
 	public static BarcodeFormats FormatsFromString(string str)
 	{
 		var fmts = zxing_BarcodeFormatsFromString(str);
-		if (fmts == BarcodeFormats.Invalid)
+		if ((int)fmts == -1) // see zxing_BarcodeFormat_Invalid
 			throw new Exception(MarshalAsString(zxing_LastErrorMsg()));
 		return fmts;
 	}

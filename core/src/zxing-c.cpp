@@ -12,6 +12,7 @@
 #include <exception>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 using namespace ZXing;
@@ -47,14 +48,15 @@ static uint8_t* copy(const ByteArray& ba, int* len)
 	return ret;
 }
 
-static Results ReadBarcodesAndSetLastError(const zxing_ImageView* iv, const zxing_ReaderOptions* opts, int maxSymbols)
+static std::tuple<Results, bool> ReadBarcodesAndSetLastError(const zxing_ImageView* iv, const zxing_ReaderOptions* opts,
+															 int maxSymbols)
 {
 	try {
 		if (iv) {
 			auto o = opts ? *opts : ReaderOptions{};
 			if (maxSymbols)
 				o.setMaxNumberOfSymbols(maxSymbols);
-			return ReadBarcodes(*iv, o);
+			return {ReadBarcodes(*iv, o), true};
 		} else
 			lastErrorMsg = "ImageView param is NULL";
 	} catch (std::exception& e) {
@@ -63,7 +65,7 @@ static Results ReadBarcodesAndSetLastError(const zxing_ImageView* iv, const zxin
 		lastErrorMsg = "Unknown error";
 	}
 
-	return {};
+	return {Results{}, false};
 }
 
 extern "C" {
@@ -75,7 +77,24 @@ zxing_ImageView* zxing_ImageView_new(const uint8_t* data, int width, int height,
 									 int pixStride)
 {
 	ImageFormat cppformat = static_cast<ImageFormat>(format);
-	return new ImageView(data, width, height, cppformat, rowStride, pixStride);
+	try {
+		return new ImageView(data, width, height, cppformat, rowStride, pixStride);
+	} catch (std::exception& e) {
+		lastErrorMsg = e.what();
+	}
+	return NULL;
+}
+
+zxing_ImageView* zxing_ImageView_new_checked(const uint8_t* data, int size, int width, int height, zxing_ImageFormat format,
+											 int rowStride, int pixStride)
+{
+	ImageFormat cppformat = static_cast<ImageFormat>(format);
+	try {
+		return new ImageView(data, size, width, height, cppformat, rowStride, pixStride);
+	} catch (std::exception& e) {
+		lastErrorMsg = e.what();
+	}
+	return NULL;
 }
 
 void zxing_ImageView_delete(zxing_ImageView* iv)
@@ -228,14 +247,14 @@ ZX_GETTER(int, lineCount,)
 
 zxing_Barcode* zxing_ReadBarcode(const zxing_ImageView* iv, const zxing_ReaderOptions* opts)
 {
-	auto res = ReadBarcodesAndSetLastError(iv, opts, 1);
+	auto [res, ok] = ReadBarcodesAndSetLastError(iv, opts, 1);
 	return !res.empty() ? new Result(std::move(res.front())) : NULL;
 }
 
 zxing_Barcodes* zxing_ReadBarcodes(const zxing_ImageView* iv, const zxing_ReaderOptions* opts)
 {
-	auto res = ReadBarcodesAndSetLastError(iv, opts, 0);
-	return !res.empty() ? new Results(std::move(res)) : NULL;
+	auto [res, ok] = ReadBarcodesAndSetLastError(iv, opts, 0);
+	return !res.empty() || ok ? new Results(std::move(res)) : NULL;
 }
 
 void zxing_Barcode_delete(zxing_Barcode* barcode)
