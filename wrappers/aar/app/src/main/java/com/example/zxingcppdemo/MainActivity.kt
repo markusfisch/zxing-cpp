@@ -208,6 +208,9 @@ class MainActivity : AppCompatActivity() {
 		if (chipTryHarder.isChecked) {
 			hints[DecodeHintType.TRY_HARDER] = true
 		}
+		if (chipTryInvert.isChecked) {
+			hints[DecodeHintType.ALSO_INVERTED] = true
+		}
 
 		return try {
 			val bitmap = BinaryBitmap(
