@@ -49,6 +49,7 @@ object ZxingCpp {
 		DATA_BAR,
 		DATA_BAR_EXPANDED,
 		DATA_MATRIX,
+		DX_FILM_EDGE,
 		EAN_8,
 		EAN_13,
 		ITF,
