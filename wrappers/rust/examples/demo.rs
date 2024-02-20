@@ -17,18 +17,19 @@ fn main() -> anyhow::Result<()> {
 	#[cfg(not(feature = "image"))]
 	let iv = ImageView::from_slice(&lum_img, lum_img.width(), lum_img.height(), ImageFormat::Lum)?;
 
-	let formats = barcode_formats_from_string(formats.unwrap_or_default())?;
-	let opts = ReaderOptions::default()
+	let formats = BarcodeFormats::from_str(formats.unwrap_or_default())?;
+	let reader = BarcodeReader::new()
 		.formats(formats)
 		.try_harder(!fast)
 		.try_invert(!fast)
 		.try_rotate(!fast)
-		.try_downscale(!fast);
+		.try_downscale(!fast)
+		.return_errors(true);
 
 	#[cfg(feature = "image")]
-	let barcodes = read_barcodes(&image, &opts)?;
+	let barcodes = reader.read(&image)?;
 	#[cfg(not(feature = "image"))]
-	let barcodes = read_barcodes(iv, opts)?;
+	let barcodes = reader.read(iv)?;
 
 	if barcodes.is_empty() {
 		println!("No barcode found.");
@@ -40,7 +41,7 @@ fn main() -> anyhow::Result<()> {
 			println!("Content:    {}", barcode.content_type());
 			println!("Identifier: {}", barcode.symbology_identifier());
 			println!("EC Level:   {}", barcode.ec_level());
-			println!("Error:      {}", barcode.error_message());
+			println!("Error:      {}", barcode.error());
 			println!("Rotation:   {}", barcode.orientation());
 			println!("Position:   {}", barcode.position());
 			println!();
