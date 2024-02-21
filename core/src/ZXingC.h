@@ -14,12 +14,12 @@
 
 #include "ReaderOptions.h"
 #include "ImageView.h"
-#include "Result.h"
+#include "Barcode.h"
 
 typedef ZXing::ImageView ZXing_ImageView;
 typedef ZXing::ReaderOptions ZXing_ReaderOptions;
-typedef ZXing::Result ZXing_Barcode;
-typedef ZXing::Results ZXing_Barcodes;
+typedef ZXing::Barcode ZXing_Barcode;
+typedef ZXing::Barcodes ZXing_Barcodes;
 
 extern "C"
 {
@@ -39,6 +39,7 @@ typedef struct ZXing_Barcodes ZXing_Barcodes;
 typedef enum {
 	ZXing_ImageFormat_None = 0,
 	ZXing_ImageFormat_Lum = 0x01000000,
+	ZXing_ImageFormat_LumX = 0x02000000,
 	ZXing_ImageFormat_RGB = 0x03000102,
 	ZXing_ImageFormat_BGR = 0x03020100,
 	ZXing_ImageFormat_RGBX = 0x04000102,
@@ -159,7 +160,7 @@ int ZXing_ReaderOptions_getMinLineCount(const ZXing_ReaderOptions* opts);
 int ZXing_ReaderOptions_getMaxNumberOfSymbols(const ZXing_ReaderOptions* opts);
 
 /*
- * ZXing/Result.h
+ * ZXing/Barcode.h
  */
 
 typedef enum

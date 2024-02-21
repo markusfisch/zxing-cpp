@@ -14,14 +14,20 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-java@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 #      working-directory: wrappers/android
 #      run: ./gradlew versionDisplay
+
+    - name: Build Library
+      working-directory: wrappers/android
+      run: ./gradlew assembleRelease
+
     - name: Publish Library
+      if: ${{ github.event.inputs.publish == 'y' }}
       working-directory: wrappers/android
       env:
         ORG_GRADLE_PROJECT_signingKey: ${{ secrets.OSSRH_GPG_SECRET_KEY }}

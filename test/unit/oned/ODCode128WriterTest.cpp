@@ -7,7 +7,7 @@
 #include "oned/ODCode128Writer.h"
 #include "BitMatrixIO.h"
 #include "ReaderOptions.h"
-#include "Result.h"
+#include "Barcode.h"
 #include "oned/ODCode128Reader.h"
 
 #include "gtest/gtest.h"
@@ -35,7 +35,7 @@ static std::string LineMatrixToString(const BitMatrix& matrix)
 	return result.substr(0, result.size() - 1);
 }
 
-static ZXing::Result Decode(const BitMatrix &matrix)
+static ZXing::Barcode Decode(const BitMatrix &matrix)
 {
 	ReaderOptions opts;
 	return DecodeSingleRow(Code128Reader(opts), matrix.row(0));

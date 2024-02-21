@@ -108,6 +108,8 @@ set (COMMON_FILES
 )
 if (BUILD_READERS)
     set (COMMON_FILES ${COMMON_FILES}
+        src/Barcode.h
+        src/Barcode.cpp
         src/BinaryBitmap.h
         src/BinaryBitmap.cpp
         src/BitSource.h
@@ -138,8 +140,7 @@ if (BUILD_READERS)
         src/ReadBarcode.cpp
         src/ReedSolomonDecoder.h
         src/ReedSolomonDecoder.cpp
-        src/Result.h
-        src/Result.cpp
+        src/Result.h # [[deprecated]]
         src/ResultPoint.h
         src/ResultPoint.cpp
         src/StructuredAppend.h
@@ -491,6 +492,7 @@ set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 set(PRECOMPILE_HEADERS ${PUBLIC_HEADERS})
 list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>")
+list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/Result.h>") # [[deprecated]]
 target_precompile_headers(ZXing PRIVATE ${PRECOMPILE_HEADERS})
 set_source_files_properties(src/libzueci/zueci.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 set_source_files_properties(src/DecodeHints.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
