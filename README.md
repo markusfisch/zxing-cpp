@@ -55,7 +55,7 @@ Thanks a lot for your contribution!
 
 ### To read barcodes:
 1. Load your image into memory (3rd-party library required).
-2. Call `ReadBarcodes()` from [`ReadBarcode.h`](core/src/ReadBarcode.h), the simplest API to get a list of `Result` objects.
+2. Call `ReadBarcodes()` from [`ReadBarcode.h`](core/src/ReadBarcode.h), the simplest API to get a list of `Barcode` objects.
 
 A very simple example looks like this:
 ```c++
@@ -70,10 +70,10 @@ int main(int argc, char** argv)
 
     auto image = ZXing::ImageView(data, width, height, ZXing::ImageFormat::Lum);
     auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Any);
-    auto results = ZXing::ReadBarcodes(image, options);
+    auto barcodes = ZXing::ReadBarcodes(image, options);
 
-    for (const auto& r : results)
-        std::cout << ZXing::ToString(r.format()) << ": " << r.text() << "\n";
+    for (const auto& b : barcodes)
+        std::cout << ZXing::ToString(b.format()) << ": " << b.text() << "\n";
 
     return 0;
 }

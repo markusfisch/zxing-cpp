@@ -4,8 +4,9 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-#include "ReadBarcode.h"
+#include "BitMatrixIO.h"
 #include "GTIN.h"
+#include "ReadBarcode.h"
 #include "ZXVersion.h"
 
 #include <cctype>
@@ -24,6 +25,17 @@
 
 using namespace ZXing;
 
+struct CLI
+{
+	std::vector<std::string> filePaths;
+	std::string outPath;
+	int forceChannels = 0;
+	int rotate = 0;
+	bool oneLine = false;
+	bool bytesOnly = false;
+	bool showSymbol = false;
+};
+
 static void PrintUsage(const char* exePath)
 {
 	std::cout << "Usage: " << exePath << " [options] <image file>...\n"
@@ -41,6 +53,9 @@ static void PrintUsage(const char* exePath)
 			  << "    -mode <plain|eci|hri|escaped>\n"
 			  << "               Text mode used to render the raw byte content into text\n"
 			  << "    -1         Print only file name, content/error on one line per file/barcode (implies '-mode Escaped')\n"
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+			  << "    -symbol    Print the detected symbol (if available)\n"
+#endif
 			  << "    -bytes     Write (only) the bytes content of the symbol(s) to stdout\n"
 			  << "    -pngout <file name>\n"
 			  << "               Write a copy of the input image with barcodes outlined by a green line\n"
@@ -54,8 +69,7 @@ static void PrintUsage(const char* exePath)
 	std::cout << "Formats can be lowercase, with or without '-', separated by ',' and/or '|'\n";
 }
 
-static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& oneLine, bool& bytesOnly, int& forceChannels,
-						 int& rotate, std::vector<std::string>& filePaths, std::string& outPath)
+static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cli)
 {
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
 	options.setTryDenoise(true);
@@ -115,21 +129,23 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& o
 			else
 				return false;
 		} else if (is("-1")) {
-			oneLine = true;
+			cli.oneLine = true;
 		} else if (is("-bytes")) {
-			bytesOnly = true;
+			cli.bytesOnly = true;
+		} else if (is("-symbol")) {
+			cli.showSymbol = true;
 		} else if (is("-pngout")) {
 			if (++i == argc)
 				return false;
-			outPath = argv[i];
+			cli.outPath = argv[i];
 		} else if (is("-channels")) {
 			if (++i == argc)
 				return false;
-			forceChannels = atoi(argv[i]);
+			cli.forceChannels = atoi(argv[i]);
 		} else if (is("-rotate")) {
 			if (++i == argc)
 				return false;
-			rotate = atoi(argv[i]);
+			cli.rotate = atoi(argv[i]);
 		} else if (is("-help") || is("--help")) {
 			PrintUsage(argv[0]);
 			exit(0);
@@ -137,11 +153,11 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& o
 			std::cout << "ZXingReader " << ZXING_VERSION_STR << "\n";
 			exit(0);
 		} else {
-			filePaths.push_back(argv[i]);
+			cli.filePaths.push_back(argv[i]);
 		}
 	}
 
-	return !filePaths.empty();
+	return !cli.filePaths.empty();
 }
 
 void drawLine(const ImageView& iv, PointI a, PointI b, bool error)
@@ -169,45 +185,40 @@ void drawRect(const ImageView& image, const Position& pos, bool error)
 int main(int argc, char* argv[])
 {
 	ReaderOptions options;
-	std::vector<std::string> filePaths;
+	CLI cli;
 	Barcodes allBarcodes;
-	std::string outPath;
-	bool oneLine = false;
-	bool bytesOnly = false;
-	int forceChannels = 0;
-	int rotate = 0;
 	int ret = 0;
 
 	options.setTextMode(TextMode::HRI);
 	options.setEanAddOnSymbol(EanAddOnSymbol::Read);
 
-	if (!ParseOptions(argc, argv, options, oneLine, bytesOnly, forceChannels, rotate, filePaths, outPath)) {
+	if (!ParseOptions(argc, argv, options, cli)) {
 		PrintUsage(argv[0]);
 		return -1;
 	}
 
 	std::cout.setf(std::ios::boolalpha);
 
-	for (const auto& filePath : filePaths) {
+	for (const auto& filePath : cli.filePaths) {
 		int width, height, channels;
-		std::unique_ptr<stbi_uc, void (*)(void*)> buffer(stbi_load(filePath.c_str(), &width, &height, &channels, forceChannels),
+		std::unique_ptr<stbi_uc, void (*)(void*)> buffer(stbi_load(filePath.c_str(), &width, &height, &channels, cli.forceChannels),
 														 stbi_image_free);
 		if (buffer == nullptr) {
 			std::cerr << "Failed to read image: " << filePath << " (" << stbi_failure_reason() << ")" << "\n";
 			return -1;
 		}
-		channels = forceChannels ? forceChannels : channels;
+		channels = cli.forceChannels ? cli.forceChannels : channels;
 
 		auto ImageFormatFromChannels = std::array{ImageFormat::None, ImageFormat::Lum, ImageFormat::LumA, ImageFormat::RGB, ImageFormat::RGBA};
 		ImageView image{buffer.get(), width, height, ImageFormatFromChannels.at(channels)};
-		auto barcodes = ReadBarcodes(image.rotated(rotate), options);
+		auto barcodes = ReadBarcodes(image.rotated(cli.rotate), options);
 
 		// if we did not find anything, insert a dummy to produce some output for each file
 		if (barcodes.empty())
 			barcodes.emplace_back();
 
 		allBarcodes.insert(allBarcodes.end(), barcodes.begin(), barcodes.end());
-		if (filePath == filePaths.back()) {
+		if (filePath == cli.filePaths.back()) {
 			auto merged = MergeStructuredAppendSequences(allBarcodes);
 			// report all merged sequences as part of the last file to make the logic not overly complicated here
 			barcodes.insert(barcodes.end(), std::make_move_iterator(merged.begin()), std::make_move_iterator(merged.end()));
@@ -215,17 +226,17 @@ int main(int argc, char* argv[])
 
 		for (auto&& barcode : barcodes) {
 
-			if (!outPath.empty())
+			if (!cli.outPath.empty())
 				drawRect(image, barcode.position(), bool(barcode.error()));
 
 			ret |= static_cast<int>(barcode.error().type());
 
-			if (bytesOnly) {
+			if (cli.bytesOnly) {
 				std::cout.write(reinterpret_cast<const char*>(barcode.bytes().data()), barcode.bytes().size());
 				continue;
 			}
 
-			if (oneLine) {
+			if (cli.oneLine) {
 				std::cout << filePath << " " << ToString(barcode.format());
 				if (barcode.isValid())
 					std::cout << " \"" << barcode.text(TextMode::Escaped) << "\"";
@@ -235,11 +246,11 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			if (filePaths.size() > 1 || barcodes.size() > 1) {
+			if (cli.filePaths.size() > 1 || barcodes.size() > 1) {
 				static bool firstFile = true;
 				if (!firstFile)
 					std::cout << "\n";
-				if (filePaths.size() > 1)
+				if (cli.filePaths.size() > 1)
 					std::cout << "File:       " << filePath << "\n";
 				firstFile = false;
 			}
@@ -291,10 +302,15 @@ int main(int argc, char* argv[])
 
 			if (barcode.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
+
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+			if (auto& symbol = barcode.symbol(); cli.showSymbol && !symbol.empty())
+				std::cout << "Symbol:\n" << ToString(symbol);
+#endif
 		}
 
-		if (Size(filePaths) == 1 && !outPath.empty())
-			stbi_write_png(outPath.c_str(), image.width(), image.height(), 3, image.data(0, 0), image.rowStride());
+		if (Size(cli.filePaths) == 1 && !cli.outPath.empty())
+			stbi_write_png(cli.outPath.c_str(), image.width(), image.height(), 3, image.data(0, 0), image.rowStride());
 
 #ifdef NDEBUG
 		if (getenv("MEASURE_PERF")) {

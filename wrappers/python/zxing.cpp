@@ -252,16 +252,16 @@ PYBIND11_MODULE(zxingcpp, m)
 	py::class_<Position>(m, "Position", "The position of a decoded symbol")
 		.def_property_readonly("top_left", &Position::topLeft,
 			":return: coordinate of the symbol's top-left corner\n"
-			":rtype: zxing.Point")
+			":rtype: zxingcpp.Point")
 		.def_property_readonly("top_right", &Position::topRight,
 			":return: coordinate of the symbol's top-right corner\n"
-			":rtype: zxing.Point")
+			":rtype: zxingcpp.Point")
 		.def_property_readonly("bottom_left", &Position::bottomLeft,
 			":return: coordinate of the symbol's bottom-left corner\n"
-			":rtype: zxing.Point")
+			":rtype: zxingcpp.Point")
 		.def_property_readonly("bottom_right", &Position::bottomRight,
 			":return: coordinate of the symbol's bottom-right corner\n"
-			":rtype: zxing.Point")
+			":rtype: zxingcpp.Point")
 		.def("__str__", [](Position pos) {
 			std::ostringstream oss;
 			oss << pos;
@@ -276,12 +276,12 @@ PYBIND11_MODULE(zxingcpp, m)
 	py::class_<Error>(m, "Error", "Barcode reading error")
 		.def_property_readonly("type", &Error::type,
 		   ":return: Error type\n"
-		   ":rtype: zxing.ErrorType")
+		   ":rtype: zxingcpp.ErrorType")
 		.def_property_readonly("message", &Error::msg,
 			":return: Error message\n"
 			":rtype: str")
 		.def("__str__", [](Error e) { return ToString(e); });
-	py::class_<Barcode>(m, "Result", "Result of barcode reading")
+	py::class_<Barcode>(m, "Barcode", "The Barcode class")
 		.def_property_readonly("valid", &Barcode::isValid,
 			":return: whether or not barcode is valid (i.e. a symbol was found and decoded)\n"
 			":rtype: bool")
@@ -293,7 +293,7 @@ PYBIND11_MODULE(zxingcpp, m)
 			":rtype: bytes")
 		.def_property_readonly("format", &Barcode::format,
 			":return: decoded symbol format\n"
-			":rtype: zxing.BarcodeFormat")
+			":rtype: zxingcpp.BarcodeFormat")
 		.def_property_readonly("symbology_identifier", &Barcode::symbologyIdentifier,
 			":return: decoded symbology idendifier\n"
 			":rtype: str")
@@ -302,31 +302,32 @@ PYBIND11_MODULE(zxingcpp, m)
 			":rtype: str")
 		.def_property_readonly("content_type", &Barcode::contentType,
 			":return: content type of symbol\n"
-			":rtype: zxing.ContentType")
+			":rtype: zxingcpp.ContentType")
 		.def_property_readonly("position", &Barcode::position,
 			":return: position of the decoded symbol\n"
-			":rtype: zxing.Position")
+			":rtype: zxingcpp.Position")
 		.def_property_readonly("orientation", &Barcode::orientation,
 			":return: orientation (in degree) of the decoded symbol\n"
 			":rtype: int")
 		.def_property_readonly(
 			"error", [](const Barcode& res) { return res.error() ? std::optional(res.error()) : std::nullopt; },
 			":return: Error code or None\n"
-			":rtype: zxing.Error");
+			":rtype: zxingcpp.Error");
+	m.attr("Result") = m.attr("Barcode"); // alias to deprecated name for the Barcode class
 	m.def("barcode_format_from_str", &BarcodeFormatFromString,
 		py::arg("str"),
 		"Convert string to BarcodeFormat\n\n"
 		":type str: str\n"
 		":param str: string representing barcode format\n"
 		":return: corresponding barcode format\n"
-		":rtype: zxing.BarcodeFormat");
+		":rtype: zxingcpp.BarcodeFormat");
 	m.def("barcode_formats_from_str", &BarcodeFormatsFromString,
 		py::arg("str"),
 		"Convert string to BarcodeFormats\n\n"
 		":type str: str\n"
 		":param str: string representing a list of barcodes formats\n"
 		":return: corresponding barcode formats\n"
-		":rtype: zxing.BarcodeFormats");
+		":rtype: zxingcpp.BarcodeFormats");
 	m.def("read_barcode", &read_barcode,
 		py::arg("image"),
 		py::arg("formats") = BarcodeFormats{},
@@ -352,7 +353,7 @@ PYBIND11_MODULE(zxingcpp, m)
 		":param try_downscale: if ``True`` (the default), decoder also scans downscaled versions of the input; \n"
 		"  if ``False``, it will only search in the resolution provided.\n"
 		":type text_mode: zxing.TextMode\n"
-		":param text_mode: specifies the TextMode that governs how the raw bytes content is transcoded to text in the Result.\n"
+		":param text_mode: specifies the TextMode that governs how the raw bytes content is transcoded to text.\n"
 		"  Defaults to :py:attr:`zxing.TextMode.HRI`."
 		":type binarizer: zxing.Binarizer\n"
 		":param binarizer: the binarizer used to convert image before decoding barcodes.\n"
@@ -364,9 +365,9 @@ PYBIND11_MODULE(zxingcpp, m)
 		":param ean_add_on_symbol: Specify whether to Ignore, Read or Require EAN-2/5 add-on symbols while scanning \n"
 		"  EAN/UPC codes. Default is ``Ignore``.\n"
 		":type return_errors: bool\n"
-		":param return_errors: Set to True to return the barcodes with errors as well (e.g. checksum errors); see ``Result.error``.\n"
+		":param return_errors: Set to True to return the barcodes with errors as well (e.g. checksum errors); see ``Barcode.error``.\n"
 		" Default is False."
-		":rtype: zxing.Result\n"
+		":rtype: zxingcpp.Barcode\n"
 		":return: a Barcode if found, None otherwise"
 	);
 	m.def("read_barcodes", &read_barcodes,
@@ -394,7 +395,7 @@ PYBIND11_MODULE(zxingcpp, m)
 		":param try_downscale: if ``True`` (the default), decoder also scans downscaled versions of the input; \n"
 		"  if ``False``, it will only search in the resolution provided.\n"
 		":type text_mode: zxing.TextMode\n"
-		":param text_mode: specifies the TextMode that governs how the raw bytes content is transcoded to text in the Result.\n"
+		":param text_mode: specifies the TextMode that governs how the raw bytes content is transcoded to text.\n"
 		"  Defaults to :py:attr:`zxing.TextMode.HRI`."
 		":type binarizer: zxing.Binarizer\n"
 		":param binarizer: the binarizer used to convert image before decoding barcodes.\n"
@@ -406,9 +407,9 @@ PYBIND11_MODULE(zxingcpp, m)
 		":param ean_add_on_symbol: Specify whether to Ignore, Read or Require EAN-2/5 add-on symbols while scanning \n"
 		"  EAN/UPC codes. Default is ``Ignore``.\n"
 		":type return_errors: bool\n"
-		":param return_errors: Set to True to return the barcodes with errors as well (e.g. checksum errors); see ``Result.error``.\n"
+		":param return_errors: Set to True to return the barcodes with errors as well (e.g. checksum errors); see ``Barcode.error``.\n"
 		" Default is False.\n"
-		":rtype: zxing.Result\n"
+		":rtype: list[zxingcpp.Barcode]\n"
 		":return: a list of Barcodes, the list is empty if none is found"
 	);
 	py::class_<Matrix<uint8_t>>(m, "Bitmap", py::buffer_protocol())
@@ -453,6 +454,6 @@ PYBIND11_MODULE(zxingcpp, m)
 		"  the minimum quiet zone of respective barcode is used."
 		":type ec_level: int\n"
 		":param ec_level: error correction level of the barcode (Used for Aztec, PDF417, and QRCode only).\n"
-		":rtype: zxing.Bitmap\n"
+		":rtype: zxingcpp.Bitmap\n"
 	);
 }

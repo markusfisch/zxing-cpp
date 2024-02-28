@@ -15,12 +15,18 @@
 #include "Quadrilateral.h"
 #include "StructuredAppend.h"
 
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#include "BitMatrix.h"
+#include <memory>
+#endif
+
 #include <string>
 #include <vector>
 
 namespace ZXing {
 
 class DecoderResult;
+class DetectorResult;
 class ImageView;
 class Result; // TODO: 3.0 replace deprected symbol name
 
@@ -48,7 +54,9 @@ public:
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error = {},
 		   bool readerInit = false);
 
-	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
+	Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
+
+	[[deprecated]] Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
 	bool isValid() const;
 
@@ -155,6 +163,10 @@ public:
 	 */
 	std::string version() const;
 
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+	const BitMatrix& symbol() const { return *_symbol; }
+#endif
+
 	bool operator==(const Result& o) const;
 
 private:
@@ -170,6 +182,9 @@ private:
 	bool _isMirrored = false;
 	bool _isInverted = false;
 	bool _readerInit = false;
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+	std::shared_ptr<BitMatrix> _symbol;
+#endif
 };
 
 /**
