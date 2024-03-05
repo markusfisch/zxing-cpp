@@ -23,12 +23,6 @@ android {
 			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 		}
 	}
-
-	compileOptions {
-		// Required for Gradle 8.
-		sourceCompatibility = 17
-		targetCompatibility = 17
-	}
 }
 
 dependencies {

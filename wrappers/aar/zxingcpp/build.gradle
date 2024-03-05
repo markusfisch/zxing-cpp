@@ -27,12 +27,6 @@ android {
 			path file('src/main/cpp/CMakeLists.txt')
 		}
 	}
-
-	compileOptions {
-		// Required for Gradle 8.
-		sourceCompatibility = 17
-		targetCompatibility = 17
-	}
 }
 
 dependencies {
