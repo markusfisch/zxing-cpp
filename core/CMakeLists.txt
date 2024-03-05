@@ -163,6 +163,8 @@ if (BUILD_WRITERS)
         src/TextEncoder.cpp
         src/MultiFormatWriter.h
         src/MultiFormatWriter.cpp
+        $<$<BOOL:${BUILD_EXPERIMENTAL_API}>:src/WriteBarcode.h>
+        $<$<BOOL:${BUILD_EXPERIMENTAL_API}>:src/WriteBarcode.cpp>
     )
 endif()
 
@@ -191,6 +193,7 @@ if (BUILD_READERS)
         src/ReaderOptions.h
         src/Result.h # [[deprecated]]
         src/StructuredAppend.h
+        $<$<BOOL:${BUILD_EXPERIMENTAL_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/WriteBarcode.h>
         $<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>
     )
 endif()
@@ -475,6 +478,12 @@ target_compile_options (ZXing
 target_compile_features(ZXing PUBLIC cxx_std_17)
 
 target_link_libraries (ZXing PRIVATE Threads::Threads)
+
+if (ZXING_USE_ZINT)
+    include(../zxing.cmake)
+    zxing_add_package(zint zint https://github.com/zint/zint.git 11b3c18aed29cf9eb2a31debd66c8fe8a1d77604)
+    target_link_libraries (ZXing PRIVATE zint)
+endif()
 
 add_library(ZXing::ZXing ALIAS ZXing)
 # add the old alias as well, to keep old clients compiling
