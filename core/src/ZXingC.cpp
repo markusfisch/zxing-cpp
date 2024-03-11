@@ -15,12 +15,6 @@
 #include <tuple>
 #include <utility>
 
-#if !defined(ZXING_BUILD_READERS) && !defined(ZXING_BUILD_WRITERS)
-// This is a workaround to prevent the kotlin/native build from failing,
-// see https://github.com/axxel/zxing-cpp/actions/runs/8179832983/job/22366666211#step:9:32
-#define ZXING_BUILD_READERS
-#endif
-
 using namespace ZXing;
 
 static thread_local std::string lastErrorMsg;
@@ -71,7 +65,7 @@ static uint8_t* copy(const ByteArray& ba, int* len) noexcept
 	} \
 	ZX_CATCH({})
 
-#ifdef ZXING_BUILD_READERS
+#ifdef ZXING_HAS_READERS
 static std::tuple<Barcodes, bool> ReadBarcodesAndSetLastError(const ZXing_ImageView* iv, const ZXing_ReaderOptions* opts,
 															  int maxSymbols)
 {
@@ -256,7 +250,7 @@ ZXing_Barcode* ZXing_Barcodes_move(ZXing_Barcodes* barcodes, int i)
 	ZX_TRY(new Barcode(std::move((*barcodes)[i])));
 }
 
-#ifdef ZXING_BUILD_READERS
+#ifdef ZXING_HAS_READERS
 
 /*
  * ZXing/ReaderOptions.h
@@ -325,7 +319,7 @@ ZXing_Barcodes* ZXing_ReadBarcodes(const ZXing_ImageView* iv, const ZXing_Reader
 
 #endif
 
-#ifdef ZXING_BUILD_WRITERS
+#ifdef ZXING_HAS_WRITERS
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
 /*
  * ZXing/WriteBarcode.h
@@ -368,7 +362,7 @@ ZXing_WriterOptions* ZXing_WriterOptions_new()
 	ZX_TRY(new ZXing_WriterOptions());
 }
 
-void ZXing_WriterOptions_delete(ZXing_CreatorOptions* opts)
+void ZXing_WriterOptions_delete(ZXing_WriterOptions* opts)
 {
 	delete opts;
 }

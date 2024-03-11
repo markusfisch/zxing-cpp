@@ -3,17 +3,15 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-#include "BarcodeFormat.h"
-#include "BitMatrixIO.h"
-
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
 #include "WriteBarcode.h"
 #else
 #include "BitMatrix.h"
+#include "BitMatrixIO.h"
 #include "CharacterSet.h"
 #include "MultiFormatWriter.h"
 #endif
-#include "ZXVersion.h"
+#include "Version.h"
 
 #include <algorithm>
 #include <cctype>
@@ -179,7 +177,7 @@ int main(int argc, char* argv[])
 					  << "IsMirrored: " << barcode.isMirrored() << "\n"
 					  << "IsInverted: " << barcode.isInverted() << "\n"
 					  << "ecLevel:    " << barcode.ecLevel() << "\n";
-			std::cout << ToString(barcode.symbol());
+			std::cout << WriteBarcodeToUtf8(barcode);
 		}
 #else
 		auto writer = MultiFormatWriter(cli.format).setMargin(cli.withQZ ? 10 : 0);

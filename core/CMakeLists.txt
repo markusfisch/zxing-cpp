@@ -29,35 +29,33 @@ elseif (BUILD_WRITERS MATCHES "BOTH")
     set (BUILD_WRITERS_OLD ON)
 endif()
 
-set (ZXING_CORE_DEFINES
+set (ZXING_PUBLIC_FLAGS
     $<$<BOOL:${BUILD_EXPERIMENTAL_API}>:-DZXING_BUILD_EXPERIMENTAL_API>
 )
 if (WINRT)
-    set (ZXING_CORE_DEFINES ${ZXING_CORE_DEFINES}
+    set (ZXING_PUBLIC_FLAGS ${ZXING_PUBLIC_FLAGS}
         -DWINRT
     )
 endif()
 if (MSVC)
-    set (ZXING_CORE_DEFINES ${ZXING_CORE_DEFINES}
+    set (ZXING_PUBLIC_FLAGS ${ZXING_PUBLIC_FLAGS}
         /Zc:__cplusplus
     )
 endif()
 
-set (ZXING_CORE_LOCAL_DEFINES
-    $<$<BOOL:${BUILD_READERS}>:-DZXING_BUILD_READERS>
-    $<$<BOOL:${BUILD_WRITERS}>:-DZXING_BUILD_WRITERS>
+set (ZXING_PRIVATE_FLAGS
     $<$<BOOL:${BUILD_WRITERS_NEW}>:-DZXING_USE_ZINT>
     $<$<BOOL:${BUILD_UNIT_TESTS}>:-DZXING_BUILD_FOR_TEST>
 )
 if (MSVC)
-    set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}
+    set (ZXING_PRIVATE_FLAGS ${ZXING_PRIVATE_FLAGS}
         -D_SCL_SECURE_NO_WARNINGS
         -D_CRT_SECURE_NO_WARNINGS
         -D_CRT_NONSTDC_NO_WARNINGS
         -DNOMINMAX
     )
 else()
-    set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}
+    set (ZXING_PRIVATE_FLAGS ${ZXING_PRIVATE_FLAGS}
         -Wall -Wextra -Wno-missing-braces -Werror=undef -Werror=return-type)
 endif()
 
@@ -70,7 +68,7 @@ include (CheckCXXCompilerFlag)
 set(FILE_PREFIX_ARG "-fmacro-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}/=")
 check_cxx_compiler_flag("${FILE_PREFIX_ARG}" HAS_FILE_PREFIX_ARG)
 if(HAS_FILE_PREFIX_ARG)
-    set(ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES} "${FILE_PREFIX_ARG}")
+    set(ZXING_PRIVATE_FLAGS ${ZXING_PRIVATE_FLAGS} "${FILE_PREFIX_ARG}")
 endif()
 
 ################# Source files
@@ -106,6 +104,7 @@ set (COMMON_FILES
     src/ZXAlgorithms.h
     src/ZXConfig.h
     src/ZXTestSupport.h
+    src/ZXVersion.h # [[deprecated]]
     $<$<BOOL:${BUILD_C_API}>:src/ZXingC.h>
     $<$<BOOL:${BUILD_C_API}>:src/ZXingC.cpp>
 )
@@ -121,8 +120,6 @@ if (BUILD_READERS OR BUILD_WRITERS_OLD)
         src/TextUtfEncoding.h # [[deprecated]]
         src/TextUtfEncoding.cpp # [[deprecated]]
         src/Scope.h
-        src/ZXBigInteger.h # PDF417
-        src/ZXBigInteger.cpp
     )
 endif()
 if (BUILD_READERS)
@@ -134,7 +131,6 @@ if (BUILD_READERS)
         src/BitSource.cpp
         src/ConcentricFinder.h
         src/ConcentricFinder.cpp
-        src/CustomData.h # PDF417
         src/DecodeHints.h
         $<$<BOOL:${BUILD_SHARED_LIBS}>:src/DecodeHints.cpp> # [[deprecated]]
         src/DecoderResult.h
@@ -172,7 +168,6 @@ if (BUILD_READERS)
         src/TritMatrix.h # QRCode
         src/WhiteRectDetector.h
         src/WhiteRectDetector.cpp
-        src/ZXNullable.h # PDF417
     )
 endif()
 
@@ -200,8 +195,6 @@ set (PUBLIC_HEADERS
     src/Barcode.h
     src/BarcodeFormat.h
     src/BitHacks.h
-    src/BitMatrix.h
-    src/BitMatrixIO.h
     src/ByteArray.h
     src/CharacterSet.h
     src/Content.h
@@ -209,14 +202,12 @@ set (PUBLIC_HEADERS
     src/Flags.h
     src/GTIN.h
     src/ImageView.h
-    src/Matrix.h
     src/Point.h
     src/Quadrilateral.h
-    src/Range.h
     src/StructuredAppend.h
     src/TextUtfEncoding.h # [[deprecated]]
     src/ZXAlgorithms.h
-    src/ZXConfig.h
+    src/ZXVersion.h # [[deprecated]]
     $<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>
 )
 if (BUILD_READERS)
@@ -234,6 +225,10 @@ if (BUILD_WRITERS)
 endif()
 if (BUILD_WRITERS_OLD)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        src/BitMatrix.h
+        src/BitMatrixIO.h
+        src/Range.h
+        src/Matrix.h
         src/MultiFormatWriter.h
     )
 endif()
@@ -376,6 +371,12 @@ if (BUILD_WRITERS_OLD)
 endif()
 
 
+if (BUILD_READERS OR BUILD_WRITERS_OLD)
+    set (PDF417_FILES
+        src/pdf417/ZXBigInteger.h
+        src/pdf417/ZXBigInteger.cpp
+    )
+endif()
 if (BUILD_READERS)
     set (PDF417_FILES ${PDF417_FILES}
         src/pdf417/PDFBarcodeMetadata.h
@@ -403,6 +404,8 @@ if (BUILD_READERS)
         src/pdf417/PDFReader.cpp
         src/pdf417/PDFScanningDecoder.h
         src/pdf417/PDFScanningDecoder.cpp
+        src/pdf417/CustomData.h
+        src/pdf417/ZXNullable.h
     )
 endif()
 if (BUILD_WRITERS_OLD)
@@ -502,8 +505,8 @@ target_include_directories (ZXing
 )
 
 target_compile_options (ZXing
-    PUBLIC ${ZXING_CORE_DEFINES}
-    PRIVATE ${ZXING_CORE_LOCAL_DEFINES}
+    PUBLIC ${ZXING_PUBLIC_FLAGS}
+    PRIVATE ${ZXING_PRIVATE_FLAGS}
 )
 
 target_compile_features(ZXing PUBLIC cxx_std_17)
@@ -511,9 +514,22 @@ target_compile_features(ZXing PUBLIC cxx_std_17)
 target_link_libraries (ZXing PRIVATE Threads::Threads)
 
 if (BUILD_WRITERS_NEW)
+    if (ZXING_USE_BUNDLED_ZINT)
+        aux_source_directory(src/libzint LIBZINT_FILES) # manually re-run cmake after adding a new file/symlink
+        add_library(bundled_zint STATIC EXCLUDE_FROM_ALL ${LIBZINT_FILES})
+        target_include_directories (bundled_zint
+            PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libzint>"
+        )
+        target_compile_options (bundled_zint
+            PUBLIC ${ZXING_PUBLIC_FLAGS}
+            PRIVATE ${ZXING_PRIVATE_FLAGS}
+        )
+        target_link_libraries (ZXing PRIVATE bundled_zint)
+    else()
         include(../zxing.cmake)
         zxing_add_package(zint zint https://github.com/zint/zint.git 55a7369cd8c4a6b58bcd62f02a3a2d486952c897)
         target_link_libraries (ZXing PRIVATE zint)
+    endif()
 endif()
 
 add_library(ZXing::ZXing ALIAS ZXing)
@@ -564,6 +580,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         src/qrcode/QRMaskUtil.cpp
         src/qrcode/QRReader.cpp
         src/qrcode/QRVersion.cpp
+        ${LIBZINT_FILES}
         PROPERTIES SKIP_PRECOMPILE_HEADERS ON COMPILE_FLAGS -Os)
     endif()
 endif()
@@ -582,10 +599,12 @@ install (
     PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ZXing"
 )
 
-configure_file (ZXVersion.h.in ZXVersion.h)
+set(ZXING_HAS_READERS ${BUILD_READERS})
+set(ZXING_HAS_WRITERS ${BUILD_WRITERS})
+configure_file (Version.h.in Version.h)
 
 install (
-    FILES "${CMAKE_CURRENT_BINARY_DIR}/ZXVersion.h"
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/Version.h"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ZXing"
 )
 
