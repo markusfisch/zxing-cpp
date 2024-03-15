@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(ZXingPython)
 
-set (pybind11_git_repo https://github.com/pybind/pybind11.git)
-set (pybind11_git_rev v2.11.1)
-
 # check if we are called from the top-level ZXing project
 get_directory_property(hasParent PARENT_DIRECTORY)
 if (NOT hasParent)
@@ -14,9 +11,11 @@ if (NOT hasParent)
     set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 
     option (BUILD_SHARED_LIBS "Link python module to shared lib" OFF)
-    option (BUILD_WRITERS "Build with writer support (encoders)" ON)
     option (BUILD_READERS "Build with reader support (decoders)" ON)
-    set(BUILD_DEPENDENCIES "AUTO")
+    set(BUILD_WRITERS "NEW" CACHE STRING "Build with old and/or new writer (encoder) backend (OFF/ON/OLD/NEW)")
+    set(BUILD_DEPENDENCIES "AUTO" CACHE STRING "Fetch from github or use locally installed (AUTO/GITHUB/LOCAL)")
+    option (BUILD_EXPERIMENTAL_API "Build with experimental API" ON)
+    option (ZXING_USE_BUNDLED_ZINT "Use the bundled libzint for barcode creation/generation" ON)
 
     set(CORE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/core)
     if(IS_SYMLINK ${CORE_PATH})
@@ -34,7 +33,7 @@ if (NOT hasParent)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED) # see https://github.com/pybind/pybind11/issues/4785
-zxing_add_package(pybind11 pybind11 ${pybind11_git_repo} ${pybind11_git_rev})
+zxing_add_package(pybind11 pybind11 https://github.com/pybind/pybind11.git v2.11.1)
 
 # build the python module
 pybind11_add_module(zxingcpp zxing.cpp)
