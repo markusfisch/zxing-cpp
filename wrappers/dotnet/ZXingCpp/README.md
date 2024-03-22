@@ -7,7 +7,7 @@ It was originally ported from the Java ZXing library but has been developed furt
 many improvements in terms of runtime and detection performance.
 
 
-## Usage
+## Usage Reading
 
 ```cs
 using SkiaSharp;
@@ -20,13 +20,13 @@ public class Program
         var img = SKBitmap.Decode(args[0]).Copy(SKColorType.Gray8);
         var iv = new ImageView(img.GetPixels(), img.Info.Width, img.Info.Height, ImageFormat.Lum);
 
-        var reader = new BarcodeReader() {
-            Formats = args.Length > 1 ? BarcodeReader.FormatsFromString(args[1]) : BarcodeFormats.Any,
+        var readBarcodes = new BarcodeReader() {
+            Formats = args.Length > 1 ? Barcode.FormatsFromString(args[1]) : BarcodeFormats.Any,
             TryInvert = false,
             // see the ReaderOptions implementation for more available options
         };
 
-        foreach (var b in reader.Read(iv))
+        foreach (var b in readBarcodes.From(iv))
             Console.WriteLine($"{b.Format} : {b.Text}");
     }
 }
@@ -37,6 +37,9 @@ Executing this sample code from the command line would look like this:
 dotnet run -- <image-file-name> [barcode-format-list]
 ```
 
+See also the [ZXingCpp.DemoReader](https://github.com/zxing-cpp/zxing-cpp/blob/master/wrappers/dotnet/ZXingCpp.DemoReader/Program.cs)
+which shows the use of extension classes to support SkiaSharp and ImageMagick based input.
+
 The NuGet package includes the runtime/native c++ libraries for the x64 architecture on
 Windows, Linux and macOS. If something is not working out of the box or you need arm64 support
 then you need to build the `[lib]ZXing[.dll|.so|.dylib]` file yourself and make sure the .NET
@@ -46,6 +49,28 @@ Windows).
 Note: This is an alpha release, meaning the API may still change slightly to potentially feel even
 more like a native C# library depending on community feedback.
 
+## Usage Writing
+
+```cs
+using ZXingCpp;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var barcode = new Barcode(args[1], Barcode.FormatFromString(args[0]));
+        File.WriteAllText(args[2], barcode.ToSVG());
+    }
+}
+```
+
+Executing this sample code from the command line would look like this:
+```sh
+dotnet run -- <barcode-format> <text> <out-svg-file-name>
+```
+
+For an example how to write a PNG file instead of a SVG file, have a look at the
+[ZXingCpp.DemoWriter](https://github.com/zxing-cpp/zxing-cpp/blob/master/wrappers/dotnet/ZXingCpp.DemoWriter/Program.cs).
 
 ## Why ZXingCpp?
 
