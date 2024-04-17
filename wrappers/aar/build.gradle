@@ -1,5 +1,9 @@
 buildscript {
 	ext {
+		// Do not update the Kotlin or Gradle version because this will
+		// break support for Android 4 and lower. Apparently, Gradle 8 is
+		// building for a more modern platform than what is specified as
+		// minSDK. Giving `ANDROID_PLATFORM`/`APP_PLATFORM` has no effect.
 		kotlin_version = '1.8.22'
 		tools_version = '7.4.2'
 		sdk_version = 34
