@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "zxingcpp"
+    namespace = "zxingcpp.lib" // used to be just zxingcpp but needs to contain a '.' in release builds
     // ndk version 25 is known to support c++20 (see #386)
     // ndkVersion = "25.1.8937393"
 
@@ -20,7 +20,7 @@ android {
         }
         externalNativeBuild {
             cmake {
-                arguments("-DCMAKE_BUILD_TYPE=RelWithDebInfo", "-DANDROID_ARM_NEON=ON", "-DBUILD_WRITERS=OFF")
+                arguments("-DCMAKE_BUILD_TYPE=RelWithDebInfo", "-DANDROID_ARM_NEON=ON", "-DZXING_WRITERS=OFF")
             }
         }
 
@@ -51,8 +51,9 @@ dependencies {
     implementation(libs.androidx.camera.core)
 }
 
+val publishSnapshot: String? by project
 group = "io.github.zxing-cpp"
-version = "2.2.0"
+version = "2.2.0" + if (publishSnapshot == "true") "-SNAPSHOT" else ""
 
 val javadocJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
@@ -102,7 +103,7 @@ publishing {
 
             val releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             val snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            setUrl(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
+            setUrl(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
 
             credentials {
                 val ossrhUsername: String? by project
