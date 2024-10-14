@@ -5,7 +5,7 @@ buildscript {
 		// building for a more modern platform than what is specified as
 		// minSDK. Giving `ANDROID_PLATFORM`/`APP_PLATFORM` has no effect.
 		kotlin_version = '1.8.22'
-		tools_version = '7.4.2'
+		tools_version = '8.5.1'
 		sdk_version = 34
 		camerax_version = '1.3.2'
 	}
@@ -28,6 +28,6 @@ allprojects {
 	}
 }
 
-task clean(type: Delete) {
+tasks.register('clean', Delete) {
 	delete rootProject.buildDir
 }
