@@ -14,6 +14,7 @@
 #include "ODCode39Reader.h"
 #include "ODCode93Reader.h"
 #include "ODDataBarExpandedReader.h"
+#include "ODDataBarLimitedReader.h"
 #include "ODDataBarReader.h"
 #include "ODDXFilmEdgeReader.h"
 #include "ODITFReader.h"
@@ -62,6 +63,8 @@ Reader::Reader(const ReaderOptions& opts) : ZXing::Reader(opts)
 		_readers.emplace_back(new DataBarReader(opts));
 	if (formats.testFlags(BarcodeFormat::DataBarExpanded))
 		_readers.emplace_back(new DataBarExpandedReader(opts));
+	if (formats.testFlags(BarcodeFormat::DataBarLimited))
+		_readers.emplace_back(new DataBarLimitedReader(opts));
 	if (formats.testFlag(BarcodeFormat::DXFilmEdge))
 		_readers.emplace_back(new DXFilmEdgeReader(opts));
 }
@@ -236,8 +239,12 @@ static Barcodes DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers,
 
 out:
 	// remove all symbols with insufficient line count
+#ifdef __cpp_lib_erase_if
+	std::erase_if(res, [&](auto&& r) { return r.lineCount() < minLineCount; });
+#else
 	auto it = std::remove_if(res.begin(), res.end(), [&](auto&& r) { return r.lineCount() < minLineCount; });
 	res.erase(it, res.end());
+#endif
 
 	// if symbols overlap, remove the one with a lower line count
 	for (auto a = res.begin(); a != res.end(); ++a)
@@ -245,9 +252,12 @@ out:
 			if (HaveIntersectingBoundingBoxes(a->position(), b->position()))
 				*(a->lineCount() < b->lineCount() ? a : b) = Barcode();
 
-	//TODO: C++20 res.erase_if()
+#ifdef __cpp_lib_erase_if
+	std::erase_if(res, [](auto&& r) { return r.format() == BarcodeFormat::None; });
+#else
 	it = std::remove_if(res.begin(), res.end(), [](auto&& r) { return r.format() == BarcodeFormat::None; });
 	res.erase(it, res.end());
+#endif
 
 #ifdef PRINT_DEBUG
 	SaveAsPBM(dbg, rotate ? "od-log-r.pnm" : "od-log.pnm");
