@@ -464,9 +464,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 5, 180 },
 		}, ReaderOptions().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
-		runTests("itf-1", "ITF", 11, {
-			{ 10, 11, 0   },
-			{ 10, 11, 180 },
+		runTests("itf-1", "ITF", 14, {
+			{ 13, 14, 0   },
+			{ 13, 14, 180 },
 		});
 
 		runTests("itf-2", "ITF", 6, {
@@ -533,9 +533,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 6, 6, 180 },
 		});
 
-		runTests("rss14-2", "DataBar", 16, {
-			{ 8, 10, 0   },
-			{ 9, 10, 180 },
+		runTests("rss14-2", "DataBar", 14, {
+			{ 10, 11, 0   },
+			{ 10, 11, 180 },
 		});
 
 		runTests("rssexpanded-1", "DataBarExpanded", 34, {

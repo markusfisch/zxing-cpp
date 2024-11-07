@@ -15,7 +15,7 @@ namespace ZXing::OneD {
 
 Barcode ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const
 {
-	const int minCharCount = 6;
+	const int minCharCount = _opts.formats().count() == 1 ? 4 : 6; // if we are only looking for ITF, we accept shorter symbols
 	const int minQuietZone = 6; // spec requires 10
 
 	next = FindLeftGuard(next, 4 + minCharCount/2 + 3, FixedPattern<4, 4>{1, 1, 1, 1}, minQuietZone);
@@ -33,44 +33,51 @@ Barcode ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_p
 
 	constexpr int weights[] = {1, 2, 4, 7, 0};
 	int xStart = next.pixelsInFront();
+	bool startsAtFirstBar = next.isAtFirstBar();
+
 	next = next.subView(4, 10);
 
 	std::string txt;
 	txt.reserve(20);
 
 	while (next.isValid()) {
-		threshold = NarrowWideThreshold(next);
-		if (!threshold.isValid())
+		// look for end-of-symbol
+		if (next[3] > threshold.space * 3)
 			break;
 
 		BarAndSpace<int> digits, numWide;
+		bool bad = false;
 		for (int i = 0; i < 10; ++i) {
-			if (next[i] > threshold[i] * 2)
-				break;
+			bad |= next[i] > threshold[i] * 3 || next[i] < threshold[i] / 3;
 			numWide[i] += next[i] > threshold[i];
 			digits[i] += weights[i/2] * (next[i] > threshold[i]);
 		}
 
-		if (numWide.bar != 2 || numWide.space != 2)
+		if (bad || numWide.bar != 2 || numWide.space != 2)
 			break;
 
 		for (int i = 0; i < 2; ++i)
 			txt.push_back(ToDigit(digits[i] == 11 ? 0 : digits[i]));
+
+		// update threshold to support scanning slanted symbols (scanned non-perpendicular)
+		threshold = NarrowWideThreshold(next);
 
 		next.skipSymbol();
 	}
 
 	next = next.subView(0, 3);
 
-	if (Size(txt) < minCharCount || !next.isValid())
-		return {};
-
 	// Check quiet zone size
-	if (!(next.isAtLastBar() || next[3] > minQuietZone * (threshold.bar + threshold.space) / 3))
+	if (!next.isValid() || !threshold.isValid()
+		|| !(next.isAtLastBar() || next[3] > minQuietZone * (threshold.bar + threshold.space) / 3))
 		return {};
 
 	// Check stop pattern
 	if (next[0] < threshold[0] || next[1] > threshold[1] || next[2] > threshold[2])
+		return {};
+
+	// Check min length depending on whether the code covers the complete image or not
+	if (Size(txt) < (startsAtFirstBar && next.isAtLastBar() ? (minCharCount / 2) : minCharCount))
 		return {};
 
 	Error error = _opts.validateITFCheckSum() && !GTIN::IsCheckDigitValid(txt) ? ChecksumError() : Error();
