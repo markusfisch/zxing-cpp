@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        target: [Win32, x64, ARM, ARM64]
+        target: [Win32, x64, ARM64]
 
     steps:
     - uses: actions/checkout@v4
@@ -55,9 +55,6 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: winrt-x64-artifacts
-    - uses: actions/download-artifact@v4
-      with:
-        name: winrt-ARM-artifacts
     - uses: actions/download-artifact@v4
       with:
         name: winrt-ARM64-artifacts
