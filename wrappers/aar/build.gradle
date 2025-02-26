@@ -6,7 +6,7 @@ buildscript {
 		// minSDK. Giving `ANDROID_PLATFORM`/`APP_PLATFORM` has no effect.
 		kotlin_version = '2.0.20'
 		tools_version = '8.5.1'
-		sdk_version = 34
+		sdk_version = 35
 		camerax_version = '1.4.1'
 	}
 
