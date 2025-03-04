@@ -309,6 +309,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"Ljava/lang/String;"
 		"Z"
 		"I"
+		"I"
 		"Ljava/lang/String;"
 		"L" PACKAGE "GTIN;"
 		"L" PACKAGE "Error;)V");
@@ -326,6 +327,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		result.sequenceIndex(),
 		C2JString(env, result.sequenceId()),
 		result.readerInit(),
+		result.dataMask(),
 		result.lineCount(),
 		C2JString(env, result.version()),
 		CreateOptionalGTIN(env, result),

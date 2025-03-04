@@ -120,6 +120,7 @@ object ZxingCpp {
 		val sequenceIndex: Int,
 		val sequenceId: String,
 		val readerInit: Boolean,
+		val dataMask: Int,
 		val lineCount: Int,
 		val version: String,
 		val gtin: GTIN?,
