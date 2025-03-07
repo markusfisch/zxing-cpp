@@ -18,9 +18,6 @@
 
 #ifdef ZXING_EXPERIMENTAL_API
 #include <memory>
-namespace ZXing {
-class BitMatrix;
-}
 
 extern "C" struct zint_symbol;
 struct zint_symbol_deleter
@@ -35,6 +32,7 @@ using unique_zint_symbol = std::unique_ptr<zint_symbol, zint_symbol_deleter>;
 
 namespace ZXing {
 
+class BitMatrix;
 class DecoderResult;
 class DetectorResult;
 class WriterOptions;
@@ -179,6 +177,7 @@ public:
 	 */
 	int dataMask() const;
 
+	BitMatrix *symbolBitMatrix() const;
 #ifdef ZXING_EXPERIMENTAL_API
 	void symbol(BitMatrix&& bits);
 	ImageView symbol() const;
@@ -202,8 +201,8 @@ private:
 	bool _isMirrored = false;
 	bool _isInverted = false;
 	bool _readerInit = false;
-#ifdef ZXING_EXPERIMENTAL_API
 	std::shared_ptr<BitMatrix> _symbol;
+#ifdef ZXING_EXPERIMENTAL_API
 	std::shared_ptr<zint_symbol> _zint;
 #endif
 };

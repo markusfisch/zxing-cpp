@@ -226,6 +226,15 @@ static jobject CreateOptionalGTIN(JNIEnv* env, const Result& result)
 	}
 }
 
+static jobject CreateOptionalBitMatrix(JNIEnv* env, const Result& result)
+{
+	auto bm = result.symbolBitMatrix();
+	if (!bm) {
+		return nullptr;
+	}
+	return CreateBitMatrix(env, ToMatrix<uint8_t>(*bm));
+}
+
 static jobject CreateAndroidPoint(JNIEnv* env, const PointT<int>& point)
 {
 	jclass cls = env->FindClass("android/graphics/Point");
@@ -311,6 +320,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		"I"
 		"I"
 		"Ljava/lang/String;"
+		"L" PACKAGE "BitMatrix;"
 		"L" PACKAGE "GTIN;"
 		"L" PACKAGE "Error;)V");
 	return env->NewObject(
@@ -330,6 +340,7 @@ static jobject CreateResult(JNIEnv* env, const Result& result)
 		result.dataMask(),
 		result.lineCount(),
 		C2JString(env, result.version()),
+		CreateOptionalBitMatrix(env, result),
 		CreateOptionalGTIN(env, result),
 		result.error() ? CreateError(env, result.error()) : nullptr);
 }

@@ -123,6 +123,7 @@ object ZxingCpp {
 		val dataMask: Int,
 		val lineCount: Int,
 		val version: String,
+		val symbol: BitMatrix?,
 		val gtin: GTIN?,
 		val error: Error?
 	)

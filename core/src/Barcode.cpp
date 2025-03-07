@@ -6,13 +6,12 @@
 
 #include "Barcode.h"
 
+#include "BitMatrix.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "ZXAlgorithms.h"
 
 #ifdef ZXING_EXPERIMENTAL_API
-#include "BitMatrix.h"
-
 #ifdef ZXING_USE_ZINT
 #include <zint.h>
 void zint_symbol_deleter::operator()(zint_symbol* p) const noexcept
@@ -50,10 +49,8 @@ Result::Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, Ba
 	  _dataMask(decodeResult.dataMask()),
 	  _lineCount(decodeResult.lineCount()),
 	  _isMirrored(decodeResult.isMirrored()),
-	  _readerInit(decodeResult.readerInit())
-#ifdef ZXING_EXPERIMENTAL_API
-	  , _symbol(std::make_shared<BitMatrix>(std::move(detectorResult).bits()))
-#endif
+	  _readerInit(decodeResult.readerInit()),
+	  _symbol(std::make_shared<BitMatrix>(std::move(detectorResult).bits()))
 {
 	if (decodeResult.versionNumber())
 		snprintf(_version, 4, "%d", decodeResult.versionNumber());
@@ -148,6 +145,11 @@ Result& Result::setReaderOptions(const ReaderOptions& opts)
 		_content.defaultCharset = opts.characterSet();
 	_readerOpts = opts;
 	return *this;
+}
+
+BitMatrix *Result::symbolBitMatrix() const
+{
+	return _symbol ? _symbol.get() : nullptr;
 }
 
 #ifdef ZXING_EXPERIMENTAL_API
