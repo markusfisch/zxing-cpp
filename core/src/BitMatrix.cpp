@@ -129,17 +129,21 @@ void GetPatternRow(const BitMatrix& matrix, int r, std::vector<uint16_t>& pr, bo
 		GetPatternRow(matrix.row(r), pr);
 }
 
-BitMatrix Inflate(BitMatrix&& input, int width, int height, int quietZone)
+BitMatrix Inflate(BitMatrix&& input, int width, int height, int quietZoneInModules)
 {
 	const int codeWidth = input.width();
 	const int codeHeight = input.height();
-	const int outputWidth = std::max(width, codeWidth + 2 * quietZone);
-	const int outputHeight = std::max(height, codeHeight + 2 * quietZone);
+	const int codeWidthZoned = codeWidth + 2 * quietZoneInModules;
+	const int codeHeightZoned = codeHeight + 2 * quietZoneInModules;
+	const int outputWidth = std::max(width, codeWidthZoned);
+	const int outputHeight = std::max(height, codeHeightZoned);
 
-	if (input.width() == outputWidth && input.height() == outputHeight)
+	if (codeWidth == outputWidth && codeHeight == outputHeight)
 		return std::move(input);
 
-	const int scale = std::min((outputWidth - 2*quietZone) / codeWidth, (outputHeight - 2*quietZone) / codeHeight);
+	const int scale = std::min(
+			outputWidth / codeWidthZoned,
+			outputHeight / codeHeightZoned);
 	// Padding includes both the quiet zone and the extra white pixels to
 	// accommodate the requested dimensions.
 	const int leftPadding = (outputWidth - (codeWidth * scale)) / 2;

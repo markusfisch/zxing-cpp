@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 			std::cout << WriteBarcodeToUtf8(barcode);
 		}
 #else
-		auto writer = MultiFormatWriter(cli.format).setMargin(cli.withQZ ? 10 : 0);
+		auto writer = MultiFormatWriter(cli.format).setMargin(cli.withQZ ? 1 : 0);
 		if (!cli.ecLevel.empty())
 			writer.setEccLevel(std::stoi(cli.ecLevel));
 
@@ -195,10 +195,10 @@ int main(int argc, char* argv[])
 			for (uint8_t c : file)
 				bytes.push_back(c);
 			writer.setEncoding(CharacterSet::BINARY);
-			matrix = writer.encode(bytes, cli.sizeHint, std::clamp(cli.sizeHint / 2, 50, 300));
+			matrix = writer.encode(bytes, cli.sizeHint, cli.sizeHint);
 		} else {
 			writer.setEncoding(CharacterSet::UTF8);
-			matrix = writer.encode(cli.input, cli.sizeHint, std::clamp(cli.sizeHint / 2, 50, 300));
+			matrix = writer.encode(cli.input, cli.sizeHint, cli.sizeHint);
 		}
 		auto bitmap = ToMatrix<uint8_t>(matrix);
 #endif

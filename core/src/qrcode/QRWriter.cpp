@@ -18,7 +18,7 @@
 
 namespace ZXing::QRCode {
 
-static const int QUIET_ZONE_SIZE = 4;
+static const int QUIET_ZONE_SIZE = 1;
 
 Writer::Writer()
 	: _margin(QUIET_ZONE_SIZE),
