@@ -48,7 +48,7 @@ Then add the dependency in your `app/build.gradle`:
 
 ```groovy
 dependencies {
-	implementation 'com.github.markusfisch:zxing-cpp:v2.2.0.5'
+	implementation 'com.github.markusfisch:zxing-cpp:v2.3.0.1'
 }
 ```
 
