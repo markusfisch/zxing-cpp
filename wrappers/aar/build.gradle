@@ -4,8 +4,8 @@ buildscript {
 		// break support for Android 4 and lower. Apparently, Gradle 8 is
 		// building for a more modern platform than what is specified as
 		// minSDK. Giving `ANDROID_PLATFORM`/`APP_PLATFORM` has no effect.
-		kotlin_version = '2.0.20'
-		tools_version = '8.5.1'
+		kotlin_version = '1.8.22'
+		tools_version = '7.4.2'
 		sdk_version = 35
 		camerax_version = '1.4.1'
 	}
@@ -28,6 +28,6 @@ allprojects {
 	}
 }
 
-tasks.register('clean', Delete) {
+task clean(type: Delete) {
 	delete rootProject.buildDir
 }

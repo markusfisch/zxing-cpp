@@ -27,38 +27,20 @@ android {
 			path file('src/main/cpp/CMakeLists.txt')
 		}
 	}
-
-	// Required since Gradle 8.
-	compileOptions {
-		sourceCompatibility = JavaVersion.VERSION_1_8
-		targetCompatibility = JavaVersion.VERSION_1_8
-	}
-	kotlinOptions {
-		jvmTarget = "1.8"
-	}
 }
 
 dependencies {
 	implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
-publishing {
-	publications {
-		aar(MavenPublication) {
-			artifactId = 'zxingcpp'
-			groupId = project.group.toString()
-			version = project.version.toString()
-
-			artifact("$buildDir/outputs/aar/${project.name}-release.aar")
-
-			pom.withXml {
-				def dependenciesNode = asNode().appendNode('dependencies')
-				configurations.implementation.allDependencies.each { dependency ->
-					def dependencyNode = dependenciesNode.appendNode('dependency')
-					dependencyNode.appendNode('groupId', dependency.group)
-					dependencyNode.appendNode('artifactId', dependency.name)
-					dependencyNode.appendNode('version', dependency.version)
-				}
+afterEvaluate {
+	publishing {
+		publications {
+			release(MavenPublication) {
+				from components.release
+				artifactId = 'android'
+				groupId = project.group.toString()
+				version = project.version.toString()
 			}
 		}
 	}
