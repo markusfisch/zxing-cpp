@@ -196,7 +196,7 @@ private:
 	BarcodeFormat _format = BarcodeFormat::None;
 	char _ecLevel[4] = {};
 	char _version[4] = {};
-	int _dataMask = 0;
+	int _dataMask = -1;
 	int _lineCount = 0;
 	bool _isMirrored = false;
 	bool _isInverted = false;
