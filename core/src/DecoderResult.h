@@ -29,6 +29,7 @@ class DecoderResult
 	bool _isMirrored = false;
 	bool _readerInit = false;
 	Error _error;
+	std::string _json;
 	std::shared_ptr<CustomData> _extra;
 
 	DecoderResult(const DecoderResult &) = delete;
@@ -77,6 +78,7 @@ public:
 	ZX_PROPERTY(Error, error, setError)
 	ZX_PROPERTY(bool, isMirrored, setIsMirrored)
 	ZX_PROPERTY(bool, readerInit, setReaderInit)
+	ZX_PROPERTY(std::string, json, setJson)
 	ZX_PROPERTY(std::shared_ptr<CustomData>, extra, setExtra)
 
 #undef ZX_PROPERTY

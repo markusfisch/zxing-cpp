@@ -183,6 +183,8 @@ public:
 	ImageView symbol() const;
 	void zint(unique_zint_symbol&& z);
 	zint_symbol* zint() const { return _zint.get(); }
+	Result&& extra(std::string&& json) { _json = std::move(json); return std::move(*this); }
+	std::string extra() const { return _json.size() ? "{" + _json.substr(0, _json.size() - 1) + "}" : ""; }
 #endif
 
 	bool operator==(const Result& o) const;
@@ -204,6 +206,7 @@ private:
 	std::shared_ptr<BitMatrix> _symbol;
 #ifdef ZXING_EXPERIMENTAL_API
 	std::shared_ptr<zint_symbol> _zint;
+	std::string _json;
 #endif
 };
 

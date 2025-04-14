@@ -18,6 +18,7 @@ add_executable (UnitTest
     CharacterSetECITest.cpp
     ErrorTest.cpp
     GTINTest.cpp
+    JSONTest.cpp
     PseudoRandom.h
     SanitizerSupport.cpp
     TextUtfEncodingTest.cpp
@@ -86,6 +87,12 @@ target_sources (UnitTest PRIVATE
     oned/ODCodaBarWriterTest.cpp
     oned/ODCode128WriterTest.cpp
     qrcode/QREncoderTest.cpp
+)
+endif()
+
+if (ZXING_WRITERS MATCHES "NEW|BOTH")
+target_sources (UnitTest PRIVATE
+    WriteBarcodeTest.cpp
 )
 endif()
 

@@ -60,8 +60,8 @@ static Character ReadDataCharacter(const PatternView& view)
 	int evnWidest = 9 - oddWidest;
 #ifndef __cpp_lib_span
 #pragma message("DataBarLimited not supported without std::span<> (c++20 feature)")
-	int vOdd = 0;
-	int vEvn = 0;
+	int vOdd = oddWidest;
+	int vEvn = evnWidest;
 #else
 	int vOdd = GetValue(oddPattern, oddWidest, false);
 	int vEvn = GetValue(evnPattern, evnWidest, true);
@@ -150,7 +150,7 @@ Barcode DataBarLimitedReader::decodePattern(int rowNumber, PatternView& next, st
 
 		printf("- %d, %d, %d\n", checkSum, left.value, right.value);
 
-		if ((left.checksum + 20 * right.checksum) % 89 != checkSum)
+		if (!left || !right || (left.checksum + 20 * right.checksum) % 89 != checkSum)
 			continue;
 
 		return {ConstructText(left, right),    rowNumber, next.pixelsInFront(), next.pixelsTillEnd(),
