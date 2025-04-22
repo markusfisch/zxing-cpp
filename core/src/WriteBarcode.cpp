@@ -106,7 +106,7 @@ WriterOptions& WriterOptions::operator=(WriterOptions&&) = default;
 static bool SupportsGS1(BarcodeFormat format)
 {
 	return (BarcodeFormat::Aztec | BarcodeFormat::Code128 | BarcodeFormat::DataMatrix | BarcodeFormat::QRCode
-			| BarcodeFormat::RMQRCode)
+			| BarcodeFormat::RMQRCode | BarcodeFormat::DataBarExpanded)
 		.testFlag(format);
 }
 
@@ -180,8 +180,8 @@ static constexpr BarcodeFormatZXing2Zint barcodeFormatZXing2Zint[] = {
 	{BarcodeFormat::DataBarLimited, BARCODE_DBAR_LTD},
 	{BarcodeFormat::DataMatrix, BARCODE_DATAMATRIX},
 	{BarcodeFormat::DXFilmEdge, BARCODE_DXFILMEDGE},
-	{BarcodeFormat::EAN8, BARCODE_EANX},
-	{BarcodeFormat::EAN13, BARCODE_EANX},
+	{BarcodeFormat::EAN8, BARCODE_EAN8},
+	{BarcodeFormat::EAN13, BARCODE_EAN13},
 	{BarcodeFormat::ITF, BARCODE_C25INTER},
 	{BarcodeFormat::MaxiCode, BARCODE_MAXICODE},
 	{BarcodeFormat::MicroQRCode, BARCODE_MICROQR},
@@ -349,13 +349,9 @@ zint_symbol* CreatorOptions::zint() const
 
 	if (!zint) {
 #ifdef PRINT_DEBUG
-		printf("zint version: %d, sizeof(zint_symbol): %ld\n", ZBarcode_Version(), sizeof(zint_symbol));
+//		printf("zint version: %d, sizeof(zint_symbol): %ld, options: %s\n", ZBarcode_Version(), sizeof(zint_symbol), options().c_str());
 #endif
 		zint.reset(ZBarcode_Create());
-
-#ifdef PRINT_DEBUG
-		printf("options: %s\n", options().c_str());
-#endif
 
 		auto i = FindIf(barcodeFormatZXing2Zint, [zxing = format()](auto& v) { return v.zxing == zxing; });
 		if (i == std::end(barcodeFormatZXing2Zint))
@@ -393,7 +389,9 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 {
 	auto zint = opts.zint();
 
-	zint->input_mode = mode == UNICODE_MODE && opts.gs1() && SupportsGS1(opts.format()) ? GS1_MODE | GS1PARENS_MODE : mode;
+	zint->input_mode = mode == UNICODE_MODE && opts.gs1() && SupportsGS1(opts.format()) ? GS1_MODE : mode;
+	if (mode == UNICODE_MODE && static_cast<const char*>(data)[0] != '[')
+		zint->input_mode |= GS1PARENS_MODE;
 	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES | BARCODE_RAW_TEXT;
 
 	if (mode == DATA_MODE && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI))
@@ -419,7 +417,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	for (int i = 0; i < zint->raw_seg_count; ++i) {
 		const auto& raw_seg = zint->raw_segs[i];
 #ifdef PRINT_DEBUG
-		printf("  seg %d of %d with eci %d: %s\n", i, zint->raw_seg_count, raw_seg.eci, (char*)raw_seg.source);
+		printf("  seg %d of %d with eci %d: %.*s\n", i, zint->raw_seg_count, raw_seg.eci, raw_seg.length, (char*)raw_seg.source);
 #endif
 		if (ECI(raw_seg.eci) != ECI::ISO8859_1)
 			content.switchEncoding(ECI(raw_seg.eci));
@@ -525,7 +523,7 @@ Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& o
 		writer.setEccLevel(std::stoi(opts.ecLevel()));
 	writer.setEncoding(CharacterSet::UTF8); // write UTF8 (ECI value 26) for maximum compatibility
 
-	return CreateBarcode(writer.encode(std::string(contents), 0, IsLinearCode(opts.format()) ? 50 : 0), opts);
+	return CreateBarcode(writer.encode(std::string(contents), 0, IsLinearBarcode(opts.format()) ? 50 : 0), opts);
 }
 
 #if __cplusplus > 201703L
@@ -538,7 +536,7 @@ Barcode CreateBarcodeFromText(std::u8string_view contents, const CreatorOptions&
 Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions& opts)
 {
 	std::wstring bytes;
-	for (uint8_t c : std::basic_string_view<uint8_t>((uint8_t*)data, size))
+	for (uint8_t c : ByteView(data, size))
 		bytes.push_back(c);
 
 	auto writer = MultiFormatWriter(opts.format()).setMargin(0);
@@ -546,7 +544,7 @@ Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions&
 		writer.setEccLevel(std::stoi(opts.ecLevel()));
 	writer.setEncoding(CharacterSet::BINARY);
 
-	return CreateBarcode(writer.encode(bytes, 0, IsLinearCode(opts.format()) ? 50 : 0), opts);
+	return CreateBarcode(writer.encode(bytes, 0, IsLinearBarcode(opts.format()) ? 50 : 0), opts);
 }
 
 } // namespace ZXing
