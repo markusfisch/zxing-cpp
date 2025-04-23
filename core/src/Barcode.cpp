@@ -9,6 +9,7 @@
 #include "BitMatrix.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
+#include "JSON.h"
 #include "ZXAlgorithms.h"
 
 #ifdef ZXING_EXPERIMENTAL_API
@@ -170,6 +171,11 @@ ImageView Result::symbol() const
 void Result::zint(unique_zint_symbol&& z)
 {
 	_zint = std::shared_ptr(std::move(z));
+}
+
+std::string Result::extra(std::string_view key) const
+{
+	return _json.empty() ? "" : key.empty() ? "{" + _json.substr(0, _json.size() - 1) + "}" : std::string(JsonGetStr(_json, key));
 }
 #endif
 
