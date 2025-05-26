@@ -6,12 +6,14 @@
 
 #include "QRDecoder.h"
 
+#ifdef ZXING_EXPERIMENTAL_API
+#include "Barcode.h"
+#endif
 #include "BitMatrix.h"
 #include "BitSource.h"
 #include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "GenericGF.h"
-#include "JSON.h"
 #include "QRBitMatrixParser.h"
 #include "QRCodecMode.h"
 #include "QRDataBlock.h"
@@ -368,7 +370,11 @@ DecoderResult Decode(const BitMatrix& bits)
 	auto ret = DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel)
 		.setDataMask(formatInfo.dataMask)
 		.setIsMirrored(formatInfo.isMirrored)
-		.setJson(JsonValue("DataMask", formatInfo.dataMask) + JsonValue("Version", versionStr));
+#ifdef ZXING_EXPERIMENTAL_API
+		.addExtra(BarcodeExtra::DataMask, formatInfo.dataMask, uint8_t(255))
+		.addExtra(BarcodeExtra::Version, versionStr)
+#endif
+		;
 	if (error)
 		ret.setError(error);
 	return ret;
