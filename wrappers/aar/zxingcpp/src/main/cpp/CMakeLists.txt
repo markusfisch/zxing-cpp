@@ -12,4 +12,5 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../core ZXing EXCLUD
 
 add_library(zxingcpp_android SHARED ZxingCpp.cpp)
 
+target_link_options(zxingcpp_android PRIVATE "-Wl,-z,max-page-size=16384")
 target_link_libraries(zxingcpp_android PRIVATE ZXing::ZXing jnigraphics)
