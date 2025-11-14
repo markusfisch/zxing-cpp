@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, macos-13, ubuntu-24.04-arm] # windows-11-arm currently fails with a linker error
+        os: [ubuntu-latest, macos-latest, windows-latest, macos-15-intel, ubuntu-24.04-arm] # windows-11-arm still fails with a linker error
 
     steps:
     - uses: actions/checkout@v4
@@ -35,14 +35,14 @@ jobs:
         python-version: '3.12'
 
     - name: Install cibuildwheel
-      run: python3 -m pip install cibuildwheel==3.1.0
+      run: python3 -m pip install cibuildwheel==3.3.0
 
     - name: Build wheels
       run: python3 -m cibuildwheel --output-dir wheelhouse wrappers/python
       env:
         # TODO: setup a "BEFORE" cmake build and link the python module to the prebuild libZXing.a
         # see https://github.com/YannickJadoul/Parselmouth/blob/523c117aa780184345121f6ff8315670bc7d4d94/.github/workflows/wheels.yml#L120
-        CIBW_BUILD: cp39-* cp310-* cp311-* cp312-* cp313-*
+        CIBW_BUILD: cp310-* cp311-* cp312-* cp313-* cp314-*
         CIBW_SKIP: "*musllinux*"
         #CIBW_ARCHS_MACOS: universal2
         #CIBW_ENVIRONMENT_MACOS: CMAKE_OSX_ARCHITECTURES="arm64;x86_64"
@@ -66,7 +66,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.14'
 
     - name: Install dependencies
       working-directory: wrappers/python
