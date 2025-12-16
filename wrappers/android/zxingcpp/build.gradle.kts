@@ -1,13 +1,14 @@
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Base64
+@file:Suppress("UnstableApiUsage")
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id("maven-publish")
-    id("signing")
+    id("com.vanniktech.maven.publish") version "0.35.0"
 }
+
+// Determine the Java version from the current JVM running Gradle.
+// This was the only way to make it compile on axxel's Android Studio based dev-env as well as on the CI build.
+val jvmVersion = JavaVersion.toVersion(System.getProperty("java.version"))
 
 android {
     namespace = "zxingcpp.lib" // used to be just zxingcpp but needs to contain a '.' in release builds
@@ -36,15 +37,15 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {
-        sourceCompatibility(JavaVersion.VERSION_1_8)
-        targetCompatibility(JavaVersion.VERSION_1_8)
+        sourceCompatibility = jvmVersion
+        targetCompatibility = jvmVersion
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+//  kotlin {
+//      jvmToolchain(17) // defaults to the JDK version used by Gradle
+//  }
     externalNativeBuild {
         cmake {
-            path(file("src/main/cpp/CMakeLists.txt"))
+            path = file("src/main/cpp/CMakeLists.txt")
         }
     }
     lint {
@@ -62,94 +63,40 @@ dependencies {
 
 val publishSnapshot: String? by project
 group = "io.github.zxing-cpp"
-version = "2.4.0" + if (publishSnapshot == "true") "-SNAPSHOT" else ""
+version = "2.3.1" + if (publishSnapshot == "true") "-SNAPSHOT" else ""
 
 val javadocJar by tasks.registering(Jar::class) {
     archiveClassifier.set("javadoc")
 }
-val ossrhUsername: String? by project
-val ossrhPassword: String? by project
 
-publishing {
-    publications {
-        register<MavenPublication>("release") {
-            artifactId = "android"
-            groupId = project.group.toString()
-            version = project.version.toString()
+mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
 
-            afterEvaluate {
-                from(components["release"])
-            }
+    coordinates(project.group.toString(), "android", project.version.toString())
 
-            artifact(javadocJar.get())
-
-            pom {
-                name = "zxing-cpp"
-                description = "Wrapper for zxing-cpp barcode image processing library"
-                url = "https://github.com/zxing-cpp/zxing-cpp"
-                licenses {
-                    license {
-                        name = "The Apache License, Version 2.0"
-                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                    }
-                }
-                developers {
-                    developer {
-                        id = "zxing-cpp"
-                        name = "zxing-cpp community"
-                        email = "zxingcpp@gmail.com"
-                    }
-                }
-                scm {
-                    connection = "scm:git:git://github.com/zxing-cpp/zxing-cpp.git"
-                    developerConnection = "scm:git:git://github.com/zxing-cpp/zxing-cpp.git"
-                    url = "https://github.com/zxing-cpp/zxing-cpp"
-                }
+    pom {
+        name.set("zxing-cpp")
+        description.set("Wrapper for zxing-cpp barcode image processing library")
+        url.set("https://github.com/zxing-cpp/zxing-cpp")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
-    }
-    repositories {
-        maven {
-            name = "sonatype"
-
-            val releasesRepoUrl = "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
-            val snapshotsRepoUrl = "https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots/"
-            setUrl(if (version.toString().endsWith("-SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
-
-            credentials {
-                username = ossrhUsername
-                password = ossrhPassword
+        developers {
+            developer {
+                id.set("zxing-cpp")
+                name.set("zxing-cpp community")
+                email.set("zxingcpp@gmail.com")
             }
         }
-    }
-}
-
-signing {
-    setRequired {
-        // signing is required if the artifacts are to be published
-        gradle.taskGraph.allTasks.any { it is PublishToMavenRepository }
-    }
-    val signingKey: String? by project
-    val signingPassword: String? by project
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    sign(publishing.publications)
-}
-
-val url = "https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/${project.group}"
-val token = Base64.getEncoder().encodeToString("${ossrhUsername}:${ossrhPassword}".toByteArray())
-
-tasks.register("postPublish") {
-    doLast {
-        val conn = URL(url).openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Authorization", "Bearer ${token}")
-        val status = conn.responseCode
-        if (status != HttpURLConnection.HTTP_OK) {
-            throw GradleException("Failed to POST '${url}'. Received status code ${status}: ${conn.responseMessage}")
+        scm {
+            url.set("https://github.com/zxing-cpp/zxing-cpp")
+            connection.set("scm:git:git://github.com/zxing-cpp/zxing-cpp.git")
+            developerConnection.set("scm:git:git://github.com/zxing-cpp/zxing-cpp.git")
         }
     }
-}
-
-tasks.named("publish") {
-    finalizedBy(tasks.named("postPublish"))
 }
