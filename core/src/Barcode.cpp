@@ -56,6 +56,12 @@ Result::Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, Ba
 	  , _json(std::move(decodeResult).json())
 #endif
 {
+#ifdef ZXING_EXPERIMENTAL_API
+	// the BitMatrix stores 'black'/foreground as 0xFF and 'white'/background as 0, but we
+	// want the ImageView returned by symbol() to be a standard luminance image (black == 0)
+	_symbol->flipAll();
+#endif
+
 	if (decodeResult.versionNumber())
 		snprintf(_version, 4, "%d", decodeResult.versionNumber());
 	snprintf(_ecLevel, 4, "%s", decodeResult.ecLevel().data());
