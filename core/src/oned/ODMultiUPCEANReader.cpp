@@ -14,6 +14,7 @@
 #include "ODUPCEANCommon.h"
 #include "Barcode.h"
 #include "JSON.h"
+#include "SymbologyIdentifier.h"
 
 #include <cmath>
 
@@ -263,7 +264,7 @@ static bool AddOn(PartialResult& res, PatternView begin, int digitCount)
 	return true;
 }
 
-Barcode MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
+BarcodeData MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
 {
 	const int minSize = 3 + 6*4 + 6; // UPC-E
 
@@ -317,12 +318,8 @@ Barcode MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::
 	if (_opts.eanAddOnSymbol() == EanAddOnSymbol::Require && !addOnRes.isValid())
 		return {};
 
-	return Barcode(res.txt, rowNumber, begin.pixelsInFront(), next.pixelsTillEnd(), res.format, symbologyIdentifier, error)
-#ifdef ZXING_EXPERIMENTAL_API
-		.addExtra(JsonProp(BarcodeExtra::UPCE, upceTxt))
-		.addExtra(JsonProp(BarcodeExtra::EanAddOn, addOnRes.txt))
-#endif
-		;
+	return LinearBarcode(res.format, res.txt, rowNumber, begin.pixelsInFront(), next.pixelsTillEnd(), symbologyIdentifier, error,
+						 JsonProp(BarcodeExtra::UPCE, upceTxt) + JsonProp(BarcodeExtra::EanAddOn, addOnRes.txt));
 }
 
 } // namespace ZXing::OneD

@@ -204,7 +204,7 @@ static jobject CreateGTIN(JNIEnv* env, const std::string& country,
 		C2JString(env, issueNumber));
 }
 
-static jobject CreateOptionalGTIN(JNIEnv* env, const Result& result)
+static jobject CreateOptionalGTIN(JNIEnv* env, const Barcode& result)
 {
 	try {
 		auto country = GTIN::LookupCountryIdentifier(
@@ -226,13 +226,9 @@ static jobject CreateOptionalGTIN(JNIEnv* env, const Result& result)
 	}
 }
 
-static jobject CreateOptionalBitMatrix(JNIEnv* env, const Result& result)
+static jobject CreateOptionalBitMatrix(JNIEnv* env, const Barcode& result)
 {
-	auto bm = result.symbolBitMatrix();
-	if (!bm) {
-		return nullptr;
-	}
-	return CreateBitMatrix(env, ToMatrix<uint8_t>(*bm));
+	return CreateBitMatrix(env, ToMatrix<uint8_t>(result.symbolBitMatrix()));
 }
 
 static jobject CreateAndroidPoint(JNIEnv* env, const PointT<int>& point)
@@ -300,7 +296,7 @@ static jobject CreateBarcodeFormat(JNIEnv* env, BarcodeFormat format)
 		JavaBarcodeFormatName(format));
 }
 
-static jobject CreateResult(JNIEnv* env, const Result& result)
+static jobject CreateResult(JNIEnv* env, const Barcode& result)
 {
 	jclass cls = env->FindClass(PACKAGE "Result");
 	auto constructor = env->GetMethodID(
@@ -437,7 +433,6 @@ static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
 		.setTryCode39ExtendedMode(GetBooleanField(env, cls, hints, "tryCode39ExtendedMode"))
 		.setValidateCode39CheckSum(GetBooleanField(env, cls, hints, "validateCode39CheckSum"))
 		.setValidateITFCheckSum(GetBooleanField(env, cls, hints, "validateITFCheckSum"))
-		.setReturnCodabarStartEnd(GetBooleanField(env, cls, hints, "returnCodabarStartEnd"))
 		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
 		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints,
 			PACKAGE "EanAddOnSymbol", "eanAddOnSymbol")))

@@ -7,14 +7,16 @@ plugins {
 android {
 	namespace 'de.markusfisch.android.zxingcpp'
 	compileSdk sdk_version
+	ndkVersion = '27.0.12077973'
 
 	defaultConfig {
-		minSdkVersion 9
-		targetSdkVersion sdk_version
+		minSdk 9
+		targetSdk sdk_version
 
 		externalNativeBuild {
 			cmake {
-				arguments "-DCMAKE_BUILD_TYPE=RelWithDebInfo", \
+				arguments \
+					"-DCMAKE_BUILD_TYPE=RelWithDebInfo", \
 					"-DANDROID_ARM_NEON=ON"
 			}
 		}

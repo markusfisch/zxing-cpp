@@ -7,10 +7,7 @@
 #include "GTIN.h"
 #include "ReadBarcode.h"
 #include "Version.h"
-
-#ifdef ZXING_EXPERIMENTAL_API
 #include "WriteBarcode.h"
-#endif
 
 #include <cctype>
 #include <chrono>
@@ -57,9 +54,9 @@ static void PrintUsage(const char* exePath)
 			  << "    -mode <plain|eci|hri|escaped>\n"
 			  << "               Text mode used to render the raw byte content into text\n"
 			  << "    -1         Print only file name, content/error on one line per file/barcode (implies '-mode Escaped')\n"
-#ifdef ZXING_EXPERIMENTAL_API
 			  << "    -symbol    Print the detected symbol (if available)\n"
 			  << "    -json      Print a complete JSON formated serialization\n"
+#ifdef ZXING_EXPERIMENTAL_API
 			  << "    -denoise   Use extra denoiseing (closing operation)\n"
 #endif
 			  << "    -bytes     Write (only) the bytes content of the symbol(s) to stdout\n"
@@ -80,29 +77,29 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 	for (int i = 1; i < argc; ++i) {
 		auto is = [&](const char* str) { return strlen(argv[i]) > 1 && strncmp(argv[i], str, strlen(argv[i])) == 0; };
 		if (is("-fast")) {
-			options.setTryHarder(false);
+			options.tryHarder(false);
 		} else if (is("-norotate")) {
-			options.setTryRotate(false);
+			options.tryRotate(false);
 		} else if (is("-noinvert")) {
-			options.setTryInvert(false);
+			options.tryInvert(false);
 		} else if (is("-noscale")) {
-			options.setTryDownscale(false);
+			options.tryDownscale(false);
 #ifdef ZXING_EXPERIMENTAL_API
 		} else if (is("-denoise")) {
-			options.setTryDenoise(true);
+			options.tryDenoise(true);
 #endif
 		} else if (is("-single")) {
-			options.setMaxNumberOfSymbols(1);
+			options.maxNumberOfSymbols(1);
 		} else if (is("-ispure")) {
-			options.setIsPure(true);
-			options.setBinarizer(Binarizer::FixedThreshold);
+			options.isPure(true);
+			options.binarizer(Binarizer::FixedThreshold);
 		} else if (is("-errors")) {
-			options.setReturnErrors(true);
+			options.returnErrors(true);
 		} else if (is("-formats")) {
 			if (++i == argc)
 				return false;
 			try {
-				options.setFormats(BarcodeFormatsFromString(argv[i]));
+				options.formats(BarcodeFormatsFromString(argv[i]));
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << "\n";
 				return false;
@@ -111,24 +108,24 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			if (++i == argc)
 				return false;
 			else if (is("local"))
-				options.setBinarizer(Binarizer::LocalAverage);
+				options.binarizer(Binarizer::LocalAverage);
 			else if (is("global"))
-				options.setBinarizer(Binarizer::GlobalHistogram);
+				options.binarizer(Binarizer::GlobalHistogram);
 			else if (is("fixed"))
-				options.setBinarizer(Binarizer::FixedThreshold);
+				options.binarizer(Binarizer::FixedThreshold);
 			else
 				return false;
 		} else if (is("-mode")) {
 			if (++i == argc)
 				return false;
 			else if (is("plain"))
-				options.setTextMode(TextMode::Plain);
+				options.textMode(TextMode::Plain);
 			else if (is("eci"))
-				options.setTextMode(TextMode::ECI);
+				options.textMode(TextMode::ECI);
 			else if (is("hri"))
-				options.setTextMode(TextMode::HRI);
+				options.textMode(TextMode::HRI);
 			else if (is("escaped"))
-				options.setTextMode(TextMode::Escaped);
+				options.textMode(TextMode::Escaped);
 			else
 				return false;
 		} else if (is("-1")) {
@@ -194,8 +191,8 @@ int main(int argc, char* argv[])
 	Barcodes allBarcodes;
 	int ret = 0;
 
-	options.setTextMode(TextMode::HRI);
-	options.setEanAddOnSymbol(EanAddOnSymbol::Read);
+	options.textMode(TextMode::HRI);
+	options.eanAddOnSymbol(EanAddOnSymbol::Read);
 
 	if (!ParseOptions(argc, argv, options, cli)) {
 		PrintUsage(argv[0]);
@@ -246,13 +243,11 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-#ifdef ZXING_EXPERIMENTAL_API
 			if (cli.json) {
 				if (barcode.format() != ZXing::BarcodeFormat::None)
 					std::cout << "{\"FilePath\":\"" << filePath << "\"," << barcode.extra("ALL").substr(1) << "\n";
 				continue;
 			}
-#endif
 
 			if (cli.oneLine) {
 				std::cout << filePath << " " << ToString(barcode.format());
@@ -294,7 +289,7 @@ int main(int argc, char* argv[])
 					std::cout << key << v << "\n";
 			};
 
-			printOptional("EC Level:   ", barcode.ecLevel());
+			printOptional("ECLevel:    ", barcode.ecLevel());
 			printOptional("Version:    ", barcode.version());
 			printOptional("Error:      ", ToString(barcode.error()));
 
@@ -318,15 +313,9 @@ int main(int argc, char* argv[])
 				std::cout << "Structured Append: merged result from " << barcode.sequenceSize() << " symbols (parity/id: '"
 						  << barcode.sequenceId() << "')\n";
 
-			if (barcode.readerInit())
-				std::cout << "Reader Initialisation/Programming\n";
-
-#ifdef ZXING_EXPERIMENTAL_API
-			printOptional("UPC-E:      ", barcode.extra("UPC-E"));
 			printOptional("Extra:      ", barcode.extra());
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
-#endif
 		}
 
 		if (Size(cli.filePaths) == 1 && !cli.outPath.empty())

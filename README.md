@@ -19,7 +19,7 @@ Thanks a lot for your contribution!
 
 ## Features
 
-* Written in pure C++20 (/C++17), no third-party dependencies (for the library itself)
+* Written in pure C++20 (public API is C++17 compatible), no third-party dependencies (for the library itself)
 * Thread safe
 * Wrappers/Bindings for:
   * [Android](wrappers/android/README.md)
@@ -47,8 +47,7 @@ Thanks a lot for your contribution!
 
 [Note:]
  * DataBar used to be called RSS.
- * DataBar, DX Film Edge, MaxiCode, Micro QR Code and rMQR Code are not supported for writing (unless the library is configured `ZXING_WRITERS=NEW` and `ZXING_EXPERIMENTAL_API=ON`).
- * Building with only C++17 (see [CMakeLists.txt](https://github.com/zxing-cpp/zxing-cpp/blob/d4b0f502775857f257d13efd25fb840ece1bca3e/CMakeLists.txt#L45)) changes the behavior of the library: it then lacks support for DataBarLimited and multi-symbol and position independent detection for DataMatrix.
+ * DataBar, DX Film Edge, MaxiCode, Micro QR Code and rMQR Code are not supported for writing (unless the library is configured `ZXING_WRITERS=NEW`).
 
 ## Getting Started
 
@@ -58,7 +57,7 @@ Thanks a lot for your contribution!
 
 A very simple example looks like this:
 ```c++
-#include "ZXing/ReadBarcode.h"
+#include "ZXing/ZXingCpp.h"
 #include <iostream>
 
 int main(int argc, char** argv)
@@ -68,7 +67,7 @@ int main(int argc, char** argv)
     // load your image data from somewhere. ImageFormat::Lum assumes grey scale image data.
 
     auto image = ZXing::ImageView(data, width, height, ZXing::ImageFormat::Lum);
-    auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Any);
+    auto options = ZXing::ReaderOptions().formats(ZXing::BarcodeFormat::Any);
     auto barcodes = ZXing::ReadBarcodes(image, options);
 
     for (const auto& b : barcodes)
@@ -82,11 +81,29 @@ To see the full capability of the API, have a look at [`ZXingReader.cpp`](exampl
 [Note: At least C++17 is required on the client side to use the API.]
 
 ### To write barcodes:
-1. Create a [`MultiFormatWriter`](core/src/MultiFormatWriter.h) instance with the format you want to generate. Set encoding and margins if needed.
-2. Call `encode()` with text content and the image size. This returns a [`BitMatrix`](core/src/BitMatrix.h) which is a binary image of the barcode where `true` == visual black and `false` == visual white.
-3. Convert the bit matrix to your native image format. See also the `ToMatrix<T>(BitMatrix&)` helper function.
+1. Create a `Barcode` object with `CreateBarcode()` from [`CreateBarcode.h`](core/src/CreateBarcode.h).
+2. The `Barcode::symbol()` can be used to get access to the bit matrix (1 module == 1 pixel, no quiet zone())
+3. Alternatively the 3 `WriteBarcodeTo...()` functions from [`WriteBarcode.h`](core/src/WriteBarcode.h) can be used to create an `Image`, a SVG string or a UTF-8 string representation.
 
-As an example, have a look at [`ZXingWriter.cpp`](example/ZXingWriter.cpp). That file also contains example code showing the new `ZXING_EXPERIMENTAL_API` for writing barcodes.
+A very simple example looks like this:
+```c++
+#include "ZXing/ZXingCpp.h"
+#include <iostream>
+
+int main(int argc, char** argv)
+{
+    auto barcode = ZXing::CreateBarcodeFromText("some text", ZXing::BarcodeFormat::QRCode);
+    auto svg = ZXing::WriteBarcodeToSVG(barcode);
+
+    // see also ZXing::WriteBarcodeToImage()
+
+    std::cout << svg << "\n";
+
+    return 0;
+}
+```
+
+As an example for how to parameterize the process with `CreatorOptions` and `WriterOptions`, have a look at [`ZXingWriter.cpp`](example/ZXingWriter.cpp).
 
 ## Web Demos
 - [Read barcodes](https://zxing-cpp.github.io/zxing-cpp/demo_reader.html)

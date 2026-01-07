@@ -155,7 +155,7 @@ FinderPatternSets GenerateFinderPatternSets(FinderPatterns& patterns)
 				auto distBC = std::sqrt(distBC2);
 
 				// Make sure distAB and distBC don't differ more than reasonable
-				// TODO: make sure the constant 2 is not to conservative for reasonably tilted symbols
+				// TODO: make sure the constant 2 is not too conservative for reasonably tilted symbols
 				if (distAB > 2 * distBC || distBC > 2 * distAB)
 					continue;
 
@@ -672,7 +672,8 @@ DetectorResult SampleMQR(const BitMatrix& image, const ConcentricPattern& fp)
 
 	auto srcQuad = Rectangle(7, 7, 0.5);
 
-#if defined(_MSVC_LANG) // TODO: see MSVC issue https://developercommunity.visualstudio.com/t/constexpr-object-is-unable-to-be-used-as/10035065
+#if defined(_MSVC_LANG) && !(_MSC_VER >= 1940) // VS2022 17.10 and later work
+	// see MSVC issue https://developercommunity.visualstudio.com/t/constexpr-object-is-unable-to-be-used-as/10035065
 	static
 #else
 	constexpr

@@ -13,6 +13,7 @@
 
 // Writer
 #ifdef ZXING_EXPERIMENTAL_API
+#include "CreateBarcode.h"
 #include "WriteBarcode.h"
 #include <bit>
 #else
@@ -45,15 +46,15 @@ auto read_barcodes_impl(py::object _image, const BarcodeFormats& formats, bool t
 						uint8_t max_number_of_symbols = 0xff)
 {
 	const auto opts = ReaderOptions()
-		.setFormats(formats)
-		.setTryRotate(try_rotate)
-		.setTryDownscale(try_downscale)
-		.setTextMode(text_mode)
-		.setBinarizer(binarizer)
-		.setIsPure(is_pure)
-		.setMaxNumberOfSymbols(max_number_of_symbols)
-		.setEanAddOnSymbol(ean_add_on_symbol)
-		.setReturnErrors(return_errors);
+		.formats(formats)
+		.tryRotate(try_rotate)
+		.tryDownscale(try_downscale)
+		.textMode(text_mode)
+		.binarizer(binarizer)
+		.isPure(is_pure)
+		.maxNumberOfSymbols(max_number_of_symbols)
+		.eanAddOnSymbol(ean_add_on_symbol)
+		.returnErrors(return_errors);
 
 	if (py::isinstance<ImageView>(_image)) {
 		// Disables the GIL during zxing processing (restored automatically upon completion)
@@ -210,7 +211,7 @@ auto image_view(py::buffer buffer, int width, int height, ImageFormat format, in
 
 Barcode create_barcode(py::object content, BarcodeFormat format, const py::kwargs& kwargs)
 {
-	auto cOpts = CreatorOptions(format, py::str(kwargs.str())); // see https://github.com/pybind/pybind11/issues/5938
+	auto cOpts = CreatorOptions(format, py::str(static_cast<py::handle>(kwargs))); // see https://github.com/pybind/pybind11/issues/5938
 	auto data = py::cast<std::string>(content);
 
 	if (py::isinstance<py::str>(content))
@@ -381,7 +382,7 @@ PYBIND11_MODULE(zxingcpp, m)
 		.def_property_readonly("text", [](const Barcode& res) { return res.text(); },
 			":return: text of the decoded symbol (see also TextMode parameter)\n"
 			":rtype: str")
-		.def_property_readonly("bytes", [](const Barcode& res) { return py::bytes(res.bytes().asString()); },
+		.def_property_readonly("bytes", [](const Barcode& res) { return py::bytes((char*)res.bytes().data(), res.bytes().size()); },
 			":return: uninterpreted bytes of the decoded symbol\n"
 			":rtype: bytes")
 		.def_property_readonly("format", &Barcode::format,

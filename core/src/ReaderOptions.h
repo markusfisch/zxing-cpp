@@ -12,6 +12,7 @@
 
 #include <string_view>
 #include <utility>
+#include <memory>
 
 namespace ZXing {
 
@@ -46,60 +47,45 @@ enum class TextMode : unsigned char // see above
 	Escaped, ///< Use the EscapeNonGraphical() function (e.g. ASCII 29 will be transcoded to "<GS>")
 };
 
+/**
+ * @class ReaderOptions
+ * @brief Configuration options for barcode reading and decoding behavior.
+ *
+ * @details
+ * ReaderOptions encapsulates a set of flags and parameters that control
+ * how barcode detection and decoding is performed. It provides
+ * fluent setters that support chaining. Both `name(val)` and `setName(val)`
+ * forms are available for convenience and compatibility.
+ *
+ * The class is intended to be passed to the ReadBarcodes function to
+ * influence scanning heuristics, performance vs. accuracy trade-offs, output
+ * formatting, and symbol filtering. Instances can be reused across multiple
+ * read operations.
+ *
+ * The default settings are optimized for detection rate and can be tuned
+ * for speed or specific use-cases.
+ *
+ * @see BarcodeFormats, Binarizer, TextMode, CharacterSet, ReadBarcodes
+ */
 class ReaderOptions
 {
-	bool _tryHarder                : 1;
-	bool _tryRotate                : 1;
-	bool _tryInvert                : 1;
-	bool _tryDownscale             : 1;
-	bool _isPure                   : 1;
-	bool _tryCode39ExtendedMode    : 1;
-	bool _validateCode39CheckSum   : 1;
-	bool _validateITFCheckSum      : 1;
-	bool _returnCodabarStartEnd    : 1;
-	bool _returnErrors             : 1;
-	uint8_t _downscaleFactor       : 3;
-	EanAddOnSymbol _eanAddOnSymbol : 2;
-	Binarizer _binarizer           : 2;
-	TextMode _textMode             : 3;
-	CharacterSet _characterSet     : 6;
-#ifdef ZXING_EXPERIMENTAL_API
-	bool _tryDenoise               : 1;
-#endif
-
-	uint8_t _minLineCount        = 2;
-	uint8_t _maxNumberOfSymbols  = 0xff;
-	uint16_t _downscaleThreshold = 500;
-	BarcodeFormats _formats      = BarcodeFormat::None;
+	struct Data;
+	std::unique_ptr<Data> d;
 
 public:
-	// bitfields don't get default initialized to 0 before c++20
-	ReaderOptions()
-		: _tryHarder(1),
-		  _tryRotate(1),
-		  _tryInvert(1),
-		  _tryDownscale(1),
-		  _isPure(0),
-		  _tryCode39ExtendedMode(1),
-		  _validateCode39CheckSum(0),
-		  _validateITFCheckSum(0),
-		  _returnCodabarStartEnd(1),
-		  _returnErrors(0),
-		  _downscaleFactor(3),
-		  _eanAddOnSymbol(EanAddOnSymbol::Ignore),
-		  _binarizer(Binarizer::LocalAverage),
-		  _textMode(TextMode::HRI),
-		  _characterSet(CharacterSet::Unknown)
-#ifdef ZXING_EXPERIMENTAL_API
-		  ,
-		  _tryDenoise(0)
-#endif
-	{}
+	ReaderOptions();
+	~ReaderOptions();
+	ReaderOptions(const ReaderOptions&);
+	ReaderOptions& operator=(const ReaderOptions&);
+	ReaderOptions(ReaderOptions&&);
+	ReaderOptions& operator=(ReaderOptions&&);
 
-#define ZX_PROPERTY(TYPE, GETTER, SETTER, ...) \
-	TYPE GETTER() const noexcept { return _##GETTER; } \
-	__VA_ARGS__ ReaderOptions& SETTER(TYPE v)& { return (void)(_##GETTER = std::move(v)), *this; } \
-	__VA_ARGS__ ReaderOptions&& SETTER(TYPE v)&& { return (void)(_##GETTER = std::move(v)), std::move(*this); }
+#define ZX_PROPERTY(TYPE, NAME, SETTER, ...) \
+	TYPE NAME() const noexcept; \
+	__VA_ARGS__ ReaderOptions& NAME(TYPE v) &; \
+	__VA_ARGS__ ReaderOptions&& NAME(TYPE v) &&; \
+	__VA_ARGS__ inline ReaderOptions& SETTER(TYPE v) & { return NAME(v); } \
+	__VA_ARGS__ inline ReaderOptions&& SETTER(TYPE v) && { return std::move(*this).NAME(v); }
 
 	/// Specify a set of BarcodeFormats that should be searched for, the default is all supported formats.
 	ZX_PROPERTY(BarcodeFormats, formats, setFormats)
@@ -128,11 +114,9 @@ public:
 	ZX_PROPERTY(bool, isPure, setIsPure)
 
 	/// Image size ( min(width, height) ) threshold at which to start downscaled scanning
-	// WARNING: this API is experimental and may change/disappear
 	ZX_PROPERTY(uint16_t, downscaleThreshold, setDownscaleThreshold)
 
 	/// Scale factor used during downscaling, meaningful values are 2, 3 and 4
-	// WARNING: this API is experimental and may change/disappear
 	ZX_PROPERTY(uint8_t, downscaleFactor, setDownscaleFactor)
 
 	/// The number of scan lines in a linear barcode that have to be equal to accept the result, default is 2
@@ -150,9 +134,6 @@ public:
 	/// Deprecated / does nothing. The ITF symbol has a valid checksum iff symbologyIdentifier()[2] == '1'.
 	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum, [[deprecated]])
 
-	/// Deprecated / does nothing. Codabar start/stop characters are always returned.
-	ZX_PROPERTY(bool, returnCodabarStartEnd, setReturnCodabarStartEnd, [[deprecated]])
-
 	/// If true, return the barcodes with errors as well (e.g. checksum errors, see @Barcode::error())
 	ZX_PROPERTY(bool, returnErrors, setReturnErrors)
 
@@ -164,16 +145,14 @@ public:
 
 	/// Specifies fallback character set to use instead of auto-detecting it (when applicable)
 	ZX_PROPERTY(CharacterSet, characterSet, setCharacterSet)
-	ReaderOptions& setCharacterSet(std::string_view v)& { return (void)(_characterSet = CharacterSetFromString(v)), *this; }
-	ReaderOptions&& setCharacterSet(std::string_view v) && { return (void)(_characterSet = CharacterSetFromString(v)), std::move(*this); }
+	ReaderOptions& characterSet(std::string_view v) &;
+	ReaderOptions&& characterSet(std::string_view v) &&;
+	inline ReaderOptions& setCharacterSet(std::string_view v) & { return characterSet(v); }
+	inline ReaderOptions&& setCharacterSet(std::string_view v) && { return std::move(*this).characterSet(v); }
 
 #undef ZX_PROPERTY
 
-	bool hasFormat(BarcodeFormats f) const noexcept { return _formats.testFlags(f) || _formats.empty(); }
+	bool hasFormat(BarcodeFormats f) const noexcept;
 };
-
-#ifndef HIDE_DECODE_HINTS_ALIAS
-using DecodeHints [[deprecated]] = ReaderOptions;
-#endif
 
 } // ZXing

@@ -25,7 +25,7 @@ TEST(ContentTest, Base)
 {
 	{ // Null
 		Content c;
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 		EXPECT_EQ(c.guessEncoding(), CharacterSet::Unknown);
 #else
 		EXPECT_EQ(c.guessEncoding(), CharacterSet::ISO8859_1);
@@ -34,11 +34,11 @@ TEST(ContentTest, Base)
 		EXPECT_TRUE(c.empty());
 	}
 
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 	{ // set latin1
 		Content c;
 		c.switchEncoding(CharacterSet::ISO8859_1);
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u00E9Z");
 #endif
@@ -48,7 +48,7 @@ TEST(ContentTest, Base)
 	{ // set CharacterSet::ISO8859_5
 		Content c;
 		c.switchEncoding(CharacterSet::ISO8859_5);
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u0449Z");
 #endif
@@ -57,14 +57,14 @@ TEST(ContentTest, Base)
 
 	{ // switch to CharacterSet::ISO8859_5
 		Content c;
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u00E9Z");
 #endif
 		EXPECT_FALSE(c.hasECI);
 		c.switchEncoding(CharacterSet::ISO8859_5);
 		EXPECT_FALSE(c.hasECI);
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u0449Z");
 #endif
@@ -73,12 +73,12 @@ TEST(ContentTest, Base)
 #endif
 }
 
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 TEST(ContentTest, GuessEncoding)
 {
 	{ // guess latin1
 		Content c;
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u00E9Z");
 #endif
@@ -89,7 +89,7 @@ TEST(ContentTest, GuessEncoding)
 
 	{ // guess Shift_JIS
 		Content c;
-		c.append(ByteArray{'A', 0x83, 0x65, 'Z'});
+		c.append("A\x83\x65Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u30C6Z");
 #endif
@@ -99,18 +99,18 @@ TEST(ContentTest, GuessEncoding)
 }
 #endif
 
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 TEST(ContentTest, ECI)
 {
 	{ // switch to ECI::ISO8859_5
 		Content c;
 		c.symbology = {'d', '1', 3}; // DataMatrix
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u00E9Z");
 #endif
 		c.switchEncoding(ECI::ISO8859_5);
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u0449Z");
 #endif
@@ -122,12 +122,12 @@ TEST(ContentTest, ECI)
 	{ // switch ECI -> latin1 for unknown (instead of Shift_JIS)
 		Content c;
 		c.symbology = {'d', '1', 3}; // DataMatrix
-		c.append(ByteArray{'A', 0x83, 0x65, 'Z'});
+		c.append("A\x83\x65Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u0083\u0065Z");
 #endif
 		c.switchEncoding(ECI::ISO8859_5);
-		c.append(ByteArray{'A', 0xE9, 'Z'});
+		c.append("A\xE9Z");
 #ifndef ZXING_READERS
 		c.utf8Cache.push_back("A\u0449Z");
 #endif

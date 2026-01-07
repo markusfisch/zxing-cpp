@@ -5,6 +5,7 @@
 
 #include "Content.h"
 
+#include "ByteArray.h"
 #include "CharacterSet.h"
 #include "ECI.h"
 #include "HRI.h"
@@ -138,7 +139,7 @@ std::string Content::render(bool withECI) const
 	});
 
 	return res;
-#elif defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+#elif defined(ZXING_USE_ZINT)
 	assert(!utf8Cache.empty());
 	if (!withECI)
 		return std::accumulate(utf8Cache.begin(), utf8Cache.end(), std::string());
@@ -171,7 +172,6 @@ std::string Content::render(bool withECI) const
 
 	return res;
 #else
-	//TODO: replace by proper construction from encoded data from within zint
 	(void)withECI;
 	return std::string(bytes.asString());
 #endif
@@ -184,7 +184,7 @@ std::string Content::text(TextMode mode) const
 	case TextMode::ECI: return render(true);
 	case TextMode::HRI:
 		switch (type()) {
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 		case ContentType::GS1: {
 			auto plain = render(false);
 			auto hri = HRIFromGS1(plain);
@@ -236,7 +236,7 @@ ByteArray Content::bytesECI() const
 	return res;
 }
 
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 /**
 * @param bytes bytes encoding a string, whose encoding should be guessed
 * @return name of guessed encoding; at the moment will only guess one of:
@@ -249,7 +249,7 @@ CharacterSet GuessTextEncoding(ByteView bytes, CharacterSet fallback = Character
 	// which should be by far the most common encodings.
 	bool canBeISO88591 = true;
 	bool canBeShiftJIS = true;
-	bool canBeUTF8 = true;
+	bool canBeUTF8 = IsValidUtf8(bytes);
 	int utf8BytesLeft = 0;
 	//int utf8LowChars = 0;
 	int utf2BytesChars = 0;
@@ -415,7 +415,7 @@ CharacterSet GuessTextEncoding(ByteView bytes, CharacterSet fallback = Character
 
 CharacterSet Content::guessEncoding() const
 {
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 	// assemble all blocks with unknown encoding
 	ByteArray input;
 	ForEachECIBlock([&](ECI eci, int begin, int end) {

@@ -8,8 +8,8 @@ android {
 	compileSdk sdk_version
 
 	defaultConfig {
-		minSdkVersion 21
-		targetSdkVersion sdk_version
+		minSdk 21
+		targetSdk sdk_version
 
 		versionCode 1
 		versionName "1.0.0"

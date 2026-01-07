@@ -8,19 +8,27 @@
 #pragma once
 
 #include "BarcodeFormat.h"
-#include "ByteArray.h"
-#include "Content.h"
-#include "ReaderOptions.h"
+#include "ContentType.h"
+#include "ReaderOptions.h" // for TextMode
 #include "Error.h"
 #include "ImageView.h"
 #include "Quadrilateral.h"
 #include "StructuredAppend.h"
 
-#ifdef ZXING_EXPERIMENTAL_API
 #include <memory>
 
 namespace ZXing {
+
 class BitMatrix;
+class DecoderResult;
+class DetectorResult;
+class CreatorOptions;
+class ReaderOptions;
+class WriterOptions;
+class Barcode;
+
+using Position = QuadrilateralI;
+using Barcodes = std::vector<Barcode>;
 
 namespace BarcodeExtra {
 	#define ZX_EXTRA(NAME) static constexpr auto NAME = #NAME
@@ -28,74 +36,48 @@ namespace BarcodeExtra {
 	ZX_EXTRA(Version);
 	ZX_EXTRA(EanAddOn); // EAN/UPC
 	ZX_EXTRA(UPCE);
+	ZX_EXTRA(ReaderInit);
 	#undef ZX_EXTRA
 } // namespace BarcodeExtra
 
-} // namespace ZXing
-
-extern "C" struct zint_symbol;
-struct zint_symbol_deleter
-{
-	void operator()(zint_symbol* p) const noexcept;
-};
-using unique_zint_symbol = std::unique_ptr<zint_symbol, zint_symbol_deleter>;
-#endif
-
-#include <string>
-#include <vector>
-
-namespace ZXing {
-
-class BitMatrix;
-class DecoderResult;
-class DetectorResult;
-class WriterOptions;
-class Result; // TODO: 3.0 replace deprected symbol name
-
-using Position = QuadrilateralI;
-using Barcode = Result;
-using Barcodes = std::vector<Barcode>;
-using Results = std::vector<Result>;
-
 /**
- * @brief The Barcode class encapsulates the result of decoding a barcode within an image.
+ * @brief The Barcode class encapsulates a decoded or created barcode symbol.
  */
-class Result
+class Barcode
 {
-	void setIsInverted(bool v) { _isInverted = v; }
-	Result& setReaderOptions(const ReaderOptions& opts);
+	using Data = struct BarcodeData;
+
+	std::shared_ptr<Data> d;
+
+	Barcode& setReaderOptions(const ReaderOptions& opts);
 
 	friend Barcode MergeStructuredAppendSequence(const Barcodes&);
 	friend Barcodes ReadBarcodes(const ImageView&, const ReaderOptions&);
+	friend Barcode CreateBarcode(const void*, int, int, const CreatorOptions&);
 	friend Image WriteBarcodeToImage(const Barcode&, const WriterOptions&);
-	friend void IncrementLineCount(Barcode&);
+	friend std::string WriteBarcodeToSVG(const Barcode&, const WriterOptions&);
 
 public:
-	Result() = default;
+	Barcode();
+	Barcode(Barcode::Data&& data);
 
-	// linear symbology convenience constructor
-	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error = {},
-		   bool readerInit = false);
-
-	Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
-
-	[[deprecated]] Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
+	Barcode(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
 
 	bool isValid() const;
 
-	const Error& error() const { return _error; }
+	const Error& error() const;
 
-	BarcodeFormat format() const { return _format; }
+	BarcodeFormat format() const;
 
 	/**
 	 * @brief bytes is the raw / standard content without any modifications like character set conversions
 	 */
-	const ByteArray& bytes() const; // TODO 3.0: replace ByteArray with std::vector<uint8_t>
+	const std::vector<uint8_t>& bytes() const;
 
 	/**
 	 * @brief bytesECI is the raw / standard content following the ECI protocol
 	 */
-	ByteArray bytesECI() const;
+	std::vector<uint8_t> bytesECI() const;
 
 	/**
 	 * @brief text returns the bytes() content rendered to unicode/utf8 text accoring to specified TextMode
@@ -122,8 +104,7 @@ public:
 	 */
 	bool hasECI() const;
 
-	const Position& position() const { return _position; }
-	void setPosition(Position pos) { _position = pos; }
+	const Position& position() const;
 
 	/**
 	 * @brief orientation of barcode in degree, see also Position::orientation()
@@ -133,12 +114,11 @@ public:
 	/**
 	 * @brief isMirrored is the symbol mirrored (currently only supported by QRCode and DataMatrix)
 	 */
-	bool isMirrored() const { return _isMirrored; }
-
+	bool isMirrored() const;
 	/**
 	 * @brief isInverted is the symbol inverted / has reveresed reflectance (see ReaderOptions::tryInvert)
 	 */
-	bool isInverted() const { return _isInverted; }
+	bool isInverted() const;
 
 	/**
 	 * @brief symbologyIdentifier Symbology identifier "]cm" where "c" is symbology code character, "m" the modifier.
@@ -174,12 +154,13 @@ public:
 	/**
 	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
 	 */
-	bool readerInit() const { return _readerInit; }
+	// [[deprecated]]
+	bool readerInit() const { return !extra(BarcodeExtra::ReaderInit).empty(); }
 
 	/**
 	 * @brief lineCount How many lines have been detected with this code (applies only to linear symbologies)
 	 */
-	int lineCount() const { return _lineCount; }
+	int lineCount() const;
 
 	/**
 	 * @brief version QRCode / DataMatrix / Aztec version or size.
@@ -191,39 +172,14 @@ public:
 	 */
 	int dataMask() const;
 
-	BitMatrix *symbolBitMatrix() const;
-#ifdef ZXING_EXPERIMENTAL_API
-	void symbol(BitMatrix&& bits);
+	BitMatrix& symbolBitMatrix() const;
 	ImageView symbol() const;
-	void zint(unique_zint_symbol&& z);
-	zint_symbol* zint() const { return _zint.get(); }
-	Result&& addExtra(std::string&& json) { _json += std::move(json); return std::move(*this); }
-	// template<typename T>
-	// Result&& addExtra(std::string_view key, T val, T ignore = {}) { _json += JsonProp(key, val, ignore); return std::move(*this); }
+#if defined(ZXING_USE_ZINT) && defined(ZXING_EXPERIMENTAL_API)
+	zint_symbol* zint() const;
+#endif
 	std::string extra(std::string_view key = "") const;
-#endif
 
-	bool operator==(const Result& o) const;
-
-private:
-	Content _content;
-	Error _error;
-	Position _position;
-	ReaderOptions _readerOpts; // TODO: 3.0 switch order to prevent 4 padding bytes
-	StructuredAppendInfo _sai;
-	BarcodeFormat _format = BarcodeFormat::None;
-	char _ecLevel[4] = {};
-	char _version[4] = {};
-	int _dataMask = -1;
-	int _lineCount = 0;
-	bool _isMirrored = false;
-	bool _isInverted = false;
-	bool _readerInit = false;
-	std::shared_ptr<BitMatrix> _symbol;
-#ifdef ZXING_EXPERIMENTAL_API
-	std::shared_ptr<zint_symbol> _zint;
-	std::string _json;
-#endif
+	bool operator==(const Barcode& o) const;
 };
 
 /**

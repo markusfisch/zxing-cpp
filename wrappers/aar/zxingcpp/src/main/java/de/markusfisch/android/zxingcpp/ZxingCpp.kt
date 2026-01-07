@@ -81,7 +81,6 @@ object ZxingCpp {
 		var tryCode39ExtendedMode: Boolean = false,
 		var validateCode39CheckSum: Boolean = false,
 		var validateITFCheckSum: Boolean = false,
-		var returnCodabarStartEnd: Boolean = false,
 		var returnErrors: Boolean = false,
 		var eanAddOnSymbol: EanAddOnSymbol = EanAddOnSymbol.IGNORE,
 		var textMode: TextMode = TextMode.HRI,
