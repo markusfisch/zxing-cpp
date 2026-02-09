@@ -16,9 +16,9 @@
 
 #include "BitMatrix.h"
 #include "CharacterSet.h"
+#include "CreateBarcode.h"
 #include "GTIN.h"
 #include "ReadBarcode.h"
-#include "MultiFormatWriter.h"
 #include "Utf.h"
 
 #include <android/bitmap.h>
@@ -228,7 +228,9 @@ static jobject CreateOptionalGTIN(JNIEnv* env, const Barcode& result)
 
 static jobject CreateOptionalBitMatrix(JNIEnv* env, const Barcode& result)
 {
-	return CreateBitMatrix(env, ToMatrix<uint8_t>(result.symbolBitMatrix()));
+	auto bm = result.symbolBitMatrix().copy();
+	bm.flipAll();
+	return CreateBitMatrix(env, ToMatrix<uint8_t>(bm));
 }
 
 static jobject CreateAndroidPoint(JNIEnv* env, const PointT<int>& point)
@@ -542,18 +544,34 @@ static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet enco
 	jstring format, jint width, jint height, jint margin, jint eccLevel)
 {
 	try {
-		auto writer = MultiFormatWriter(BarcodeFormatFromString(J2CString(env, format)))
-			.setEncoding(encoding)
-			.setMargin(margin)
-			.setEccLevel(eccLevel);
-		// Avoid MultiFormatWriter.encode(std::string,…)
-		// because it ignores encoding and always runs
-		// FromUtf8() which mangles binary content.
-		std::wstring ws = encoding == CharacterSet::UTF8
-			? FromUtf8(content)
-			: std::wstring(content.begin(), content.end());
-		auto bm = writer.encode(ws, width, height);
-		return CreateBitMatrix(env, ToMatrix<uint8_t>(bm));
+		std::string s;
+		if (eccLevel >= 0 && eccLevel <= 8) {
+			s = "ecLevel=" + std::to_string(eccLevel);
+		}
+		if (encoding != CharacterSet::Unknown &&
+			encoding != CharacterSet::UTF8)
+		{
+			if (!s.empty()) {
+				s += ",";
+			}
+			s += "eci=" + ToString(encoding);
+		}
+
+		auto options = CreatorOptions(
+			BarcodeFormatFromString(J2CString(env, format)), s);
+		auto barcode = encoding == CharacterSet::UTF8
+			? CreateBarcodeFromText(content, options)
+			: CreateBarcodeFromBytes(content, options);
+
+		if (!barcode.isValid()) {
+			ThrowJavaException(env, barcode.error().msg().c_str());
+			return nullptr;
+		}
+
+		auto bm = barcode.symbolBitMatrix().copy();
+		bm.flipAll();
+		auto inflated = Inflate(std::move(bm), width, height, margin);
+		return CreateBitMatrix(env, ToMatrix<uint8_t>(inflated));
 	} catch (const std::exception& e) {
 		ThrowJavaException(env, e.what());
 		return nullptr;
