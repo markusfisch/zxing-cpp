@@ -9,19 +9,18 @@
 
 #include "BarcodeFormat.h"
 #include "ContentType.h"
-#include "ReaderOptions.h" // for TextMode
 #include "Error.h"
 #include "ImageView.h"
 #include "Quadrilateral.h"
-#include "StructuredAppend.h"
+#include "ReaderOptions.h" // for TextMode
+#include "Version.h" // ZXING_... macros
 
 #include <memory>
+#include <vector>
 
 namespace ZXing {
 
 class BitMatrix;
-class DecoderResult;
-class DetectorResult;
 class CreatorOptions;
 class ReaderOptions;
 class WriterOptions;
@@ -35,6 +34,7 @@ namespace BarcodeExtra {
 	ZX_EXTRA(DataMask); // QRCodes
 	ZX_EXTRA(Version);
 	ZX_EXTRA(EanAddOn); // EAN/UPC
+	ZX_EXTRA(ECLevel);
 	ZX_EXTRA(UPCE);
 	ZX_EXTRA(ReaderInit);
 	#undef ZX_EXTRA
@@ -61,8 +61,6 @@ public:
 	Barcode();
 	Barcode(Barcode::Data&& data);
 
-	Barcode(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
-
 	bool isValid() const;
 
 	const Error& error() const;
@@ -80,19 +78,14 @@ public:
 	std::vector<uint8_t> bytesECI() const;
 
 	/**
-	 * @brief text returns the bytes() content rendered to unicode/utf8 text accoring to specified TextMode
+	 * @brief text returns the bytes() content rendered to unicode/utf8 text according to specified TextMode
 	 */
 	std::string text(TextMode mode) const;
 
 	/**
-	 * @brief text returns the bytes() content rendered to unicode/utf8 text accoring to the TextMode set in the ReaderOptions
+	 * @brief text returns the bytes() content rendered to unicode/utf8 text according to the TextMode set in the ReaderOptions
 	 */
 	std::string text() const;
-
-	/**
-	 * @brief ecLevel returns the error correction level of the symbol (empty string if not applicable)
-	 */
-	std::string ecLevel() const;
 
 	/**
 	 * @brief contentType gives a hint to the type of content found (Text/Binary/GS1/etc.)
@@ -100,7 +93,7 @@ public:
 	ContentType contentType() const;
 
 	/**
-	 * @brief hasECI specifies wheter or not an ECI tag was found
+	 * @brief hasECI specifies whether or not an ECI tag was found
 	 */
 	bool hasECI() const;
 
@@ -116,7 +109,7 @@ public:
 	 */
 	bool isMirrored() const;
 	/**
-	 * @brief isInverted is the symbol inverted / has reveresed reflectance (see ReaderOptions::tryInvert)
+	 * @brief isInverted is the symbol inverted / has reversed reflectance (see ReaderOptions::tryInvert)
 	 */
 	bool isInverted() const;
 
@@ -152,10 +145,14 @@ public:
 	bool isPartOfSequence() const { return sequenceSize() > -1 && sequenceIndex() > -1; }
 
 	/**
-	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
+	 * @brief Retrieve supplementary metadata associated with this barcode.
+	 *
+	 * Returns a string containing additional and symbology specific information. In form of a JSON object
+	 * serialization. The optional parameter @p key can be used to retrieve a specific item only.
+	 * Key values are case insensitive. See BarcodeExtra namespace for valid keys.
+	 * If the key is not found or there is no info available, an empty string is returned.
 	 */
-	// [[deprecated]]
-	bool readerInit() const { return !extra(BarcodeExtra::ReaderInit).empty(); }
+	std::string extra(std::string_view key = "") const;
 
 	/**
 	 * @brief lineCount How many lines have been detected with this code (applies only to linear symbologies)
@@ -163,9 +160,22 @@ public:
 	int lineCount() const;
 
 	/**
+	 * @brief ecLevel returns the error correction level of the symbol (empty string if not applicable)
+	 */
+	// [[deprecated ("use extra(BarcodeExtra::ECLevel) instead")]]
+	std::string ecLevel() const { return extra(BarcodeExtra::ECLevel); }
+
+	/**
+	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
+	 */
+	// [[deprecated]]
+	bool readerInit() const { return !extra(BarcodeExtra::ReaderInit).empty(); }
+
+	/**
 	 * @brief version QRCode / DataMatrix / Aztec version or size.
 	 */
-	std::string version() const;
+	// [[deprecated ("use extra(BarcodeExtra::Version) instead")]]
+	std::string version() const { return extra(BarcodeExtra::Version); }
 
 	/**
 	 * @brief QRCode data mask.
@@ -177,7 +187,6 @@ public:
 #if defined(ZXING_USE_ZINT) && defined(ZXING_EXPERIMENTAL_API)
 	zint_symbol* zint() const;
 #endif
-	std::string extra(std::string_view key = "") const;
 
 	bool operator==(const Barcode& o) const;
 };

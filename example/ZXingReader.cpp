@@ -5,9 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "GTIN.h"
-#include "ReadBarcode.h"
-#include "Version.h"
-#include "WriteBarcode.h"
+#include "ZXingCpp.h"
 
 #include <cctype>
 #include <chrono>
@@ -55,7 +53,7 @@ static void PrintUsage(const char* exePath)
 			  << "               Text mode used to render the raw byte content into text\n"
 			  << "    -1         Print only file name, content/error on one line per file/barcode (implies '-mode Escaped')\n"
 			  << "    -symbol    Print the detected symbol (if available)\n"
-			  << "    -json      Print a complete JSON formated serialization\n"
+			  << "    -json      Print a complete JSON formatted serialization\n"
 #ifdef ZXING_EXPERIMENTAL_API
 			  << "    -denoise   Use extra denoiseing (closing operation)\n"
 #endif
@@ -152,7 +150,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			PrintUsage(argv[0]);
 			exit(0);
 		} else if (is("-version") || is("--version")) {
-			std::cout << "ZXingReader " << ZXING_VERSION_STR << "\n";
+			std::cout << "ZXingReader " << Version() << "\n";
 			exit(0);
 		} else {
 			cli.filePaths.push_back(argv[i]);
@@ -274,7 +272,7 @@ int main(int argc, char* argv[])
 			}
 
 			std::cout << "Text:       \"" << barcode.text() << "\"\n"
-					  << "Bytes:      " << ToHex(options.textMode() == TextMode::ECI ? barcode.bytesECI() : barcode.bytes()) << "\n"
+					  << "Bytes:      " << barcode.text(options.textMode() == TextMode::ECI ? TextMode::HexECI : TextMode::Hex) << "\n"
 					  << "Format:     " << ToString(barcode.format()) << "\n"
 					  << "Identifier: " << barcode.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(barcode.contentType()) << "\n"
@@ -302,7 +300,7 @@ int main(int argc, char* argv[])
 				printOptional("Add-On:     ", GTIN::EanAddOn(barcode));
 				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(barcode)));
 				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(barcode)));
-			} else if (barcode.format() == BarcodeFormat::ITF && Size(barcode.bytes()) == 14) {
+			} else if (barcode.format() == BarcodeFormat::ITF && barcode.bytes().size() == 14) {
 				printOptional("Country:    ", GTIN::LookupCountryIdentifier(barcode.text(), barcode.format()));
 			}
 
@@ -318,7 +316,7 @@ int main(int argc, char* argv[])
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
 		}
 
-		if (Size(cli.filePaths) == 1 && !cli.outPath.empty())
+		if (cli.filePaths.size() == 1 && !cli.outPath.empty())
 			stbi_write_png(cli.outPath.c_str(), image.width(), image.height(), 3, image.data(), image.rowStride());
 
 #ifdef NDEBUG

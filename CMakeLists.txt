@@ -4,12 +4,12 @@ project(ZXing)
 
 option (ZXING_READERS "Build with reader support (decoders)" ON)
 set    (ZXING_WRITERS "ON" CACHE STRING "Build with old and/or new writer (encoder) backend (OFF/ON/OLD/NEW/BOTH)")
-option (ZXING_USE_BUNDLED_ZINT "Use the bundled libzint for barcode creation/writing" ON)
 option (ZXING_C_API "Build the C-API" OFF)
 option (ZXING_EXPERIMENTAL_API "Build with experimental API" OFF)
 option (ZXING_EXAMPLES "Build the example barcode reader/writer applications" ON)
 option (ZXING_BLACKBOX_TESTS "Build the black box reader/writer tests" OFF)
 option (ZXING_UNIT_TESTS "Build the unit tests (don't enable for production builds)" OFF)
+option (ZXING_INSTALL_TEST "Test if the installed/public API works" OFF)
 option (ZXING_PYTHON_MODULE "Build the python module" OFF)
 set    (ZXING_DEPENDENCIES "AUTO" CACHE STRING "Fetch from github or use locally installed (AUTO/GITHUB/LOCAL)")
 
@@ -52,10 +52,7 @@ endif()
 
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 20)
-    # Allow the fallback to earlier versions if the compiler does not support it.
-    # set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
-if (NOT DEFINED CMAKE_CXX_EXTENSIONS)
+    set (CMAKE_CXX_STANDARD_REQUIRED ON)
     set (CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
@@ -75,6 +72,16 @@ if (ZXING_BLACKBOX_TESTS)
 endif()
 if (ZXING_UNIT_TESTS)
     add_subdirectory (test/unit)
+endif()
+if (ZXING_INSTALL_TEST)
+    add_test(
+        NAME InstallTest
+        COMMAND
+            ${CMAKE_COMMAND}
+            -DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+            -DSOURCE_DIR=${CMAKE_SOURCE_DIR}/test/install
+            -P ${CMAKE_SOURCE_DIR}/test/install/run.cmake
+    )
 endif()
 if (ZXING_PYTHON_MODULE)
     add_subdirectory (wrappers/python)

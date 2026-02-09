@@ -14,7 +14,6 @@ add_executable (UnitTest
     BarcodeFormatTest.cpp
     BitArrayUtility.cpp
     BitArrayUtility.h
-    BitHacksTest.cpp
     CharacterSetECITest.cpp
     ContentTest.cpp
     ErrorTest.cpp
@@ -56,7 +55,7 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_WRITERS MATCHES "ON|OLD|BOTH")
+if (ZXING_WRITERS MATCHES "OLD|BOTH")
 target_sources (UnitTest PRIVATE
     $<$<BOOL:${ZXING_ENABLE_AZTEC}>:aztec/AZEncoderTest.cpp>
     $<$<BOOL:${ZXING_ENABLE_DATAMATRIX}>:datamatrix/DMHighLevelEncodeTest.cpp>
@@ -76,7 +75,7 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_READERS AND ZXING_WRITERS MATCHES "ON|OLD|BOTH")
+if (ZXING_READERS AND ZXING_WRITERS MATCHES "OLD|BOTH")
 target_sources (UnitTest PRIVATE
     ReedSolomonTest.cpp
     $<$<BOOL:${ZXING_ENABLE_AZTEC}>:aztec/AZEncodeDecodeTest.cpp>
@@ -88,23 +87,25 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_READERS OR ZXING_WRITERS MATCHES "NEW|BOTH")
+if (ZXING_READERS OR ZXING_WRITERS MATCHES "ON|NEW|BOTH")
 target_sources (UnitTest PRIVATE
     GS1Test.cpp
 )
 endif()
 
-if (ZXING_WRITERS MATCHES "NEW|BOTH")
+if (ZXING_WRITERS MATCHES "ON|NEW|BOTH")
 target_sources (UnitTest PRIVATE
-    WriteBarcodeTest.cpp
+    CreateBarcodeTest.cpp
     TextEncoderTest.cpp
 )
 endif()
 
 target_include_directories (UnitTest PRIVATE .)
 
+target_compile_options (UnitTest PRIVATE -DZXING_INTERNAL)
+
 target_link_libraries (UnitTest ZXing::ZXing GTest::gtest_main GTest::gmock)
 
-#target_precompile_headers(UnitTest PRIVATE ${CMAKE_SOURCE_DIR}/core/src/ReadBarcode.h)
+# target_precompile_headers(UnitTest PRIVATE ${CMAKE_SOURCE_DIR}/core/src/ZXingCpp.h) # <gtest/gtest.h>)
 
 add_test(NAME UnitTest COMMAND UnitTest)

@@ -7,8 +7,6 @@
 #include "Barcode.h"
 
 #include "BarcodeData.h"
-#include "DecoderResult.h"
-#include "DetectorResult.h"
 #include "JSON.h"
 #include "ZXAlgorithms.h"
 
@@ -17,6 +15,7 @@
 #include <cmath>
 #include <list>
 #include <map>
+#include <numbers>
 #include <utility>
 
 #ifdef ZXING_USE_ZINT
@@ -32,27 +31,6 @@ namespace ZXing {
 Barcode::Barcode() : d(std::make_shared<Data>()) {}
 
 Barcode::Barcode(Data&& data) : d(std::make_shared<Data>(std::move(data))) {}
-
-Barcode::Barcode(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format)
-	: d(std::make_shared<Data>(std::move(decodeResult).content(), std::move(decodeResult).error(),
-							   std::move(detectorResult).position(), format, std::move(decodeResult).json()))
-{
-	decodeResult.addExtra(BarcodeExtra::ReaderInit, decodeResult.readerInit());
-	d->extra = std::move(decodeResult).json();
-	d->sai = decodeResult.structuredAppend();
-	d->symbol = std::move(detectorResult).bits();
-	d->dataMask = decodeResult.dataMask();
-	d->lineCount = decodeResult.lineCount();
-	d->isMirrored = decodeResult.isMirrored();
-
-	// the BitMatrix stores 'black'/foreground as 0xFF and 'white'/background as 0, but we
-	// want the ImageView returned by symbol() to be a standard luminance image (black == 0)
-	d->symbol.flipAll();
-
-	if (decodeResult.versionNumber())
-		snprintf(d->version, 4, "%d", decodeResult.versionNumber());
-	snprintf(d->ecLevel, 4, "%s", decodeResult.ecLevel().data());
-}
 
 bool Barcode::isValid() const
 {
@@ -94,11 +72,6 @@ std::string Barcode::text() const
 	return text(d->readerOpts.textMode());
 }
 
-std::string Barcode::ecLevel() const
-{
-	return d->ecLevel;
-}
-
 ContentType Barcode::contentType() const
 {
 	return d->content.type();
@@ -111,8 +84,7 @@ bool Barcode::hasECI() const
 
 int Barcode::orientation() const
 {
-	constexpr auto std_numbers_pi_v = 3.14159265358979323846; // TODO: c++20 <numbers>
-	return narrow_cast<int>(std::lround(d->position.orientation() * 180 / std_numbers_pi_v));
+	return narrow_cast<int>(std::lround(d->position.orientation() * 180 / std::numbers::pi));
 }
 
 bool Barcode::isMirrored() const
@@ -148,11 +120,6 @@ int Barcode::dataMask() const
 std::string Barcode::sequenceId() const
 {
 	return d->sai.id;
-}
-
-std::string Barcode::version() const
-{
-	return d->version;
 }
 
 int Barcode::lineCount() const
@@ -201,7 +168,9 @@ std::string Barcode::extra(std::string_view key) const
 		res.back() = '}';
 		return res;
 	}
-	return d->extra.empty() ? "" : key.empty() ? StrCat("{", d->extra.substr(0, d->extra.size() - 1), "}") : std::string(JsonGetStr(d->extra, key));
+	return d->extra.empty() ? ""
+		   : key.empty()    ? StrCat("{", std::string_view(d->extra).substr(0, d->extra.size() - 1), "}") // remove trailing ','
+							: JsonGet<std::string>(d->extra, key).value_or(""); // make sure JsonUnescape() is called
 }
 
 bool Barcode::operator==(const Barcode& o) const
@@ -243,7 +212,7 @@ bool BarcodeData::operator==(const BarcodeData& o) const
 	auto dBot = maxAbsComponent(ml.position.bottomLeft() - sl.position.topLeft());
 	auto slLength = maxAbsComponent(sl.position.topLeft() - sl.position.bottomRight());
 	bool isHorizontal = sl.position.topLeft().y == sl.position.bottomRight().y;
-	// Measure the multi line length in the same direction as the single line one (not diagonaly)
+	// Measure the multi line length in the same direction as the single line one (not diagonally)
 	// to make sure overly tall symbols don't get segmented (see #769).
 	auto mlLength = isHorizontal ? std::abs(ml.position.topLeft().x - ml.position.bottomRight().x)
 								 : std::abs(ml.position.topLeft().y - ml.position.bottomRight().y);

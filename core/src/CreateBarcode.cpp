@@ -31,7 +31,6 @@
 
 #include <charconv>
 #include <optional>
-#include <sstream>
 
 
 namespace ZXing {
@@ -45,10 +44,6 @@ struct CreatorOptions::Data
 	// structured_append (idx, cnt, ID)
 
 	mutable unique_zint_symbol zint;
-
-#ifndef __cpp_aggregate_paren_init // MSVC 17.14
-	Data(BarcodeFormat f, std::string o) : format(f), options(std::move(o)) {}
-#endif
 };
 
 #define ZX_PROPERTY(TYPE, NAME) \
@@ -70,6 +65,8 @@ ZX_RO_PROPERTY(bool, gs1);
 ZX_RO_PROPERTY(bool, readerInit);
 ZX_RO_PROPERTY(bool, stacked);
 ZX_RO_PROPERTY(bool, forceSquare);
+ZX_RO_PROPERTY(int, columns);
+ZX_RO_PROPERTY(int, rows);
 ZX_RO_PROPERTY(int, version);
 ZX_RO_PROPERTY(int, dataMask);
 
@@ -183,15 +180,15 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::DataBarLimited, {'e', '0', 0, AIFlag::GS1}},
 	{BarcodeFormat::DataMatrix, {'d', '1', 3}}, // '2' GS1, '3' AIM
 	// {BarcodeFormat::DotCode, {'J', '0', 3}}, // '1' GS1, '2' AIM
-	{BarcodeFormat::DXFilmEdge, {}},
+	{BarcodeFormat::DXFilmEdge, {'X', 'F'}},
 	{BarcodeFormat::EAN8, {'E', '4'}},
 	{BarcodeFormat::EAN13, {'E', '0'}},
 	// {BarcodeFormat::HanXin, {'h', '0', 1}}, // '2' GS1
 	{BarcodeFormat::ITF, {'I', '0'}}, // '1' check digit
 	{BarcodeFormat::MaxiCode, {'U', '0', 2}}, // '1' mode 2 or 3
-	// {BarcodeFormat::MicroPDF417, {'L', '2', char(-1)}},
+	// {BarcodeFormat::MicroPDF417, {'L', '2', -1}},
 	{BarcodeFormat::MicroQRCode, {'Q', '1', 1}},
-	{BarcodeFormat::PDF417, {'L', '2', char(-1)}},
+	{BarcodeFormat::PDF417, {'L', '2', -1}},
 	{BarcodeFormat::QRCode, {'Q', '1', 1}}, // '3' GS1, '5' AIM
 	{BarcodeFormat::RMQRCode, {'Q', '1', 1}}, // '3' GS1, '5' AIM
 	{BarcodeFormat::UPCA, {'E', '0'}},
@@ -326,6 +323,12 @@ zint_symbol* CreatorOptions::zint() const
 		if (auto val = version(); val && !IsLinearBarcode(format()))
 			zint->option_2 = *val;
 
+		if (auto val = columns(); val && (BarcodeFormat::DataBarExpanded | BarcodeFormat::PDF417).testFlag(format()))
+			zint->option_2 = *val;
+
+		if (auto val = rows(); val && (BarcodeFormat::DataBarExpanded | BarcodeFormat::PDF417).testFlag(format()))
+			zint->option_3 = *val;
+
 		if (auto val = dataMask(); val && (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode).testFlag(format()))
 			zint->option_3 = (zint->option_3 & 0xFF) | (*val + 1) << 8;
 
@@ -419,10 +422,10 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	int left, top, width, height;
 	bits.findBoundingBox(left, top, width, height);
 
-	auto res = Barcode(std::move(decRes), {std::move(bits), Rectangle<PointI>(left, top, width, height)}, opts.format());
+	auto res = MatrixBarcode(std::move(decRes), {std::move(bits), Rectangle<PointI>(left, top, width, height)}, opts.format());
 #endif
 
-	res.d->zint = std::move(opts.d->zint);
+	res.zint = std::move(opts.d->zint);
 
 	return res;
 }
@@ -462,7 +465,7 @@ static Barcode CreateBarcode(BitMatrix&& bits, std::string_view contents, const 
 
 	DecoderResult decRes(std::move(content));
 	DetectorResult detRes(std::move(bits), Rectangle<PointI>(0, 0, bits.width(), bits.height()));
-	return Barcode(std::move(decRes), std::move(detRes), opts.format());
+	return MatrixBarcode(std::move(decRes), std::move(detRes), opts.format());
 #endif
 }
 

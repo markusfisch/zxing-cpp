@@ -24,6 +24,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Setup Python 3
       uses: actions/setup-python@v5
@@ -34,7 +36,7 @@ jobs:
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
         -DZXING_READERS=ON -DZXING_WRITERS=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON -DZXING_C_API=ON
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON -DZXING_C_API=ON
 
     - name: Build
       run: cmake --build build -j8 --config ${{env.BUILD_TYPE}}
@@ -75,7 +77,7 @@ jobs:
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
         -DZXING_READERS=ON -DZXING_WRITERS=NEW -DZXING_EXPERIMENTAL_API=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF -DZXING_C_API=ON
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF -DZXING_C_API=ON
 
     - name: Build
       run: cmake --build build -j8 --config ${{env.BUILD_TYPE}}
@@ -98,6 +100,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
 
     - name: Configure
       run: >
@@ -136,6 +140,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+
     - uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
@@ -285,6 +292,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+
     - uses: mymindstorm/setup-emsdk@v14
 
     - name: Configure
@@ -309,6 +319,8 @@ jobs:
 
   #   steps:
   #   - uses: actions/checkout@v4
+  #     with:
+  #       submodules: true
 
   #   - name: Configure
   #     shell: cmd # powershell messes up the arguments containing a '.' ?!?

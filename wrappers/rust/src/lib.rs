@@ -216,7 +216,7 @@ make_zxing_enum!(ContentType { Text, Binary, Mixed, GS1, ISO15434, UnknownECI })
 #[rustfmt::skip]
 make_zxing_enum!(Binarizer { LocalAverage, GlobalHistogram, FixedThreshold, BoolCast });
 #[rustfmt::skip]
-make_zxing_enum!(TextMode { Plain, ECI, HRI, Hex, Escaped });
+make_zxing_enum!(TextMode { Plain, ECI, HRI, Escaped, Hex, HexECI });
 #[rustfmt::skip]
 make_zxing_enum!(EanAddOnSymbol { Ignore, Read, Require });
 
@@ -558,7 +558,6 @@ make_zxing_class_with_default!(BarcodeWriter, ZXing_WriterOptions);
 
 impl BarcodeWriter {
 	property!(WriterOptions, Scale, i32);
-	property!(WriterOptions, SizeHint, i32);
 	property!(WriterOptions, Rotate, i32);
 	property!(WriterOptions, AddHRT, add_hrt, bool);
 	property!(WriterOptions, AddQuietZones, bool);

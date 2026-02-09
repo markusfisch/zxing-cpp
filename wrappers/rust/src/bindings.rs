@@ -110,8 +110,9 @@ pub type ZXing_EanAddOnSymbol = ::core::ffi::c_uint;
 pub const ZXing_TextMode_Plain: ZXing_TextMode = 0;
 pub const ZXing_TextMode_ECI: ZXing_TextMode = 1;
 pub const ZXing_TextMode_HRI: ZXing_TextMode = 2;
-pub const ZXing_TextMode_Hex: ZXing_TextMode = 3;
-pub const ZXing_TextMode_Escaped: ZXing_TextMode = 4;
+pub const ZXing_TextMode_Escaped: ZXing_TextMode = 3;
+pub const ZXing_TextMode_Hex: ZXing_TextMode = 4;
+pub const ZXing_TextMode_HexECI: ZXing_TextMode = 5;
 pub type ZXing_TextMode = ::core::ffi::c_uint;
 extern "C" {
 	pub fn ZXing_ImageView_new(
@@ -208,8 +209,6 @@ extern "C" {
 	pub fn ZXing_WriterOptions_delete(opts: *mut ZXing_WriterOptions);
 	pub fn ZXing_WriterOptions_setScale(opts: *mut ZXing_WriterOptions, scale: ::core::ffi::c_int);
 	pub fn ZXing_WriterOptions_getScale(opts: *const ZXing_WriterOptions) -> ::core::ffi::c_int;
-	pub fn ZXing_WriterOptions_setSizeHint(opts: *mut ZXing_WriterOptions, sizeHint: ::core::ffi::c_int);
-	pub fn ZXing_WriterOptions_getSizeHint(opts: *const ZXing_WriterOptions) -> ::core::ffi::c_int;
 	pub fn ZXing_WriterOptions_setRotate(opts: *mut ZXing_WriterOptions, rotate: ::core::ffi::c_int);
 	pub fn ZXing_WriterOptions_getRotate(opts: *const ZXing_WriterOptions) -> ::core::ffi::c_int;
 	pub fn ZXing_WriterOptions_setAddHRT(opts: *mut ZXing_WriterOptions, addHRT: bool);

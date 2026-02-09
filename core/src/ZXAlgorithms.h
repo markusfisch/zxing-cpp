@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <charconv>
-#include <cstdio>
 #include <cstring>
 #include <initializer_list>
 #include <iterator>
@@ -17,6 +16,7 @@
 #include <string>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace ZXing {
 
@@ -139,27 +139,41 @@ std::string ToString(T val, int len)
 	return result;
 }
 
-template <typename P, typename = std::enable_if_t<std::is_pointer_v<P> && sizeof(std::remove_pointer_t<P>) == 1>>
-inline std::string ToHex(P data, size_t size)
+template<typename C, typename = std::enable_if_t<sizeof(typename C::value_type) == 1>>
+std::string ToHex(const C& c)
 {
-	std::string res(size * 3, ' ');
+	static constexpr char hex[] = "0123456789ABCDEF";
 
-	for (size_t i = 0; i < size; ++i) {
-		// TODO c++20 std::format
-#ifdef _MSC_VER
-		sprintf_s(&res[i * 3], 4, "%02X ", data[i]);
-#else
-		snprintf(&res[i * 3], 4, "%02X ", data[i]);
-#endif
+	const auto data = reinterpret_cast<const uint8_t*>(c.data());
+	const auto size = Size(c);
+	if (size == 0)
+		return {};
+
+	std::string res(size * 3 - 1, ' ');
+
+	for (int i = 0; i < size; ++i) {
+		res[i * 3 + 0] = hex[data[i] >> 4];
+		res[i * 3 + 1] = hex[data[i] & 0x0F];
+		if (i + 1 < size)
+			res[i * 3 + 2] = ' ';
 	}
 
-	return res.substr(0, res.size()-1);
+	return res;
 }
 
-template <typename Container>
-inline std::string ToHex(const Container& c)
+template <typename T>
+std::vector<T> ToVector(T&& v)
 {
-	return ToHex(c.data(), c.size());
+	// simply constructing a vector via initializer_list does not work with move-only types
+	std::vector<T> res;
+	res.emplace_back(std::move(v));
+	return res;
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr inline auto ToUnsigned(T v) noexcept
+{
+	return static_cast<std::make_unsigned_t<T>>(v);
 }
 
 template <class T>
@@ -204,10 +218,10 @@ inline void ForEachToken(std::string_view str, std::string_view delimiters, FUNC
 {
 	std::size_t pos = 0;
 	while (pos < str.size()) {
-        auto const next_pos = str.find_first_of(delimiters, pos);
-        callback(str.substr(pos, next_pos - pos));
-        pos = next_pos == std::string_view::npos ? str.size() : next_pos + 1;
-    }
+		auto const next_pos = str.find_first_of(delimiters, pos);
+		callback(str.substr(pos, next_pos - pos));
+		pos = next_pos == std::string_view::npos ? str.size() : next_pos + 1;
+	}
 }
 
 inline bool IsEqualIgnoreCase(std::string_view a, std::string_view b)
@@ -259,4 +273,41 @@ void UpdateMinMax(T& min, T& max, T val)
 	// Also it turns out clang and gcc can vectorize the code above but not the code below.
 }
 
+inline uint32_t ReverseBits32(uint32_t v)
+{
+	v = ((v >> 1) & 0x55555555) | ((v & 0x55555555) << 1);
+	// swap consecutive pairs
+	v = ((v >> 2) & 0x33333333) | ((v & 0x33333333) << 2);
+	// swap nibbles ...
+	v = ((v >> 4) & 0x0F0F0F0F) | ((v & 0x0F0F0F0F) << 4);
+	// swap bytes
+	v = ((v >> 8) & 0x00FF00FF) | ((v & 0x00FF00FF) << 8);
+	// swap 2-byte long pairs
+	v = (v >> 16) | (v << 16);
+	return v;
+}
+
+// use to avoid "load of misaligned address" when using a simple type cast
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+T LoadU(const void* ptr)
+{
+	T res;
+	memcpy(&res, ptr, sizeof(T));
+	return res;
+}
+
 } // ZXing
+
+#ifndef __cpp_lib_to_underlying
+
+namespace std {
+
+template <typename E, typename = std::enable_if_t<std::is_enum_v<E>>>
+constexpr std::underlying_type_t<E> to_underlying(E e) noexcept
+{
+	return static_cast<std::underlying_type_t<E>>(e);
+}
+
+} // namespace std
+
+#endif // __cpp_lib_to_underlying

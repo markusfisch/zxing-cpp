@@ -220,8 +220,9 @@ typedef enum
 	ZXing_TextMode_Plain,
 	ZXing_TextMode_ECI,
 	ZXing_TextMode_HRI,
-	ZXing_TextMode_Hex,
 	ZXing_TextMode_Escaped,
+	ZXing_TextMode_Hex,
+	ZXing_TextMode_HexECI,
 } ZXing_TextMode;
 
 ZXing_ReaderOptions* ZXing_ReaderOptions_new();
@@ -286,9 +287,6 @@ void ZXing_WriterOptions_delete(ZXing_WriterOptions* opts);
 
 void ZXing_WriterOptions_setScale(ZXing_WriterOptions* opts, int scale);
 int ZXing_WriterOptions_getScale(const ZXing_WriterOptions* opts);
-
-void ZXing_WriterOptions_setSizeHint(ZXing_WriterOptions* opts, int sizeHint);
-int ZXing_WriterOptions_getSizeHint(const ZXing_WriterOptions* opts);
 
 void ZXing_WriterOptions_setRotate(ZXing_WriterOptions* opts, int rotate);
 int ZXing_WriterOptions_getRotate(const ZXing_WriterOptions* opts);

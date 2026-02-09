@@ -12,7 +12,7 @@
 #include "DetectorResult.h"
 #include "GTIN.h"
 #include "ODDataBarCommon.h"
-#include "Barcode.h"
+#include "BarcodeData.h"
 
 #include <cmath>
 #include <unordered_set>
@@ -137,6 +137,17 @@ static bool ChecksumIsValid(Pair leftPair, Pair rightPair)
 	return a == b && Value(leftPair, rightPair) <= 9999999999999LL; // 13 digits
 }
 
+static bool PositionIsPlausible(Pair l, Pair r)
+{
+	int wl = l.xStop - l.xStart;
+	int wr = r.xStop - r.xStart;
+	int h = std::abs(l.y - r.y);
+
+	// - the pairs must be wider than the stack is high
+	// - the pairs must be roughly of the same width
+	return h < wl && h < wr && wl > wr / 2 && wr > wl / 2;
+}
+
 static std::string ConstructText(Pair leftPair, Pair rightPair)
 {
 	auto txt = ToString(Value(leftPair, rightPair), 13);
@@ -153,14 +164,15 @@ struct State : public RowReader::DecodingState
 BarcodeData DataBarReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>& state) const
 {
 #if 0 // non-stacked version
+	(void)state;
 	next = next.subView(-1, FULL_PAIR_SIZE + 1); // +1 reflects the guard pattern on the right, see IsRightPair());
 	// yes: the first view we test is at index 1 (black bar at 0 would be the guard pattern)
 	while (next.shift(2)) {
 		if (IsLeftPair(next)) {
 			if (auto leftPair = ReadPair(next, false); leftPair && next.shift(FULL_PAIR_SIZE) && IsRightPair(next)) {
 				if (auto rightPair = ReadPair(next, true); rightPair && ChecksumIsValid(leftPair, rightPair)) {
-					return {ConstructText(leftPair, rightPair), rowNumber, leftPair.xStart, rightPair.xStop, BarcodeFormat::DataBar,
-							{'e', '0', 0, AIFlag::GS1}};
+					return LinearBarcode(BarcodeFormat::DataBar, ConstructText(leftPair, rightPair), rowNumber, leftPair.xStart,
+										 rightPair.xStop, {'e', '0', 0, AIFlag::GS1});
 				}
 			}
 		}
@@ -192,7 +204,7 @@ BarcodeData DataBarReader::decodePattern(int rowNumber, PatternView& next, std::
 
 	for (const auto& leftPair : prevState->leftPairs)
 		for (const auto& rightPair : prevState->rightPairs)
-			if (ChecksumIsValid(leftPair, rightPair)) {
+			if (ChecksumIsValid(leftPair, rightPair) && PositionIsPlausible(leftPair, rightPair)) {
 				// Symbology identifier ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
 				auto res = BarcodeData{.content = Content(ByteArray{ConstructText(leftPair, rightPair)}, {'e', '0', 0, AIFlag::GS1}),
 									   .position = EstimatePosition(leftPair, rightPair),

@@ -62,7 +62,7 @@ enum class BarcodeFormat
 
 enum class ContentType { Text, Binary, Mixed, GS1, ISO15434, UnknownECI };
 
-enum class TextMode { Plain, ECI, HRI, Hex, Escaped };
+enum class TextMode { Plain, ECI, HRI, Escaped, Hex, HexECI };
 
 #else
 using ZXing::BarcodeFormat;
@@ -121,7 +121,7 @@ public:
 
 	explicit Barcode(ZXing::Barcode&& r) : ZXing::Barcode(std::move(r)) {
 		_text = QString::fromStdString(ZXing::Barcode::text());
-		_bytes = QByteArray(reinterpret_cast<const char*>(ZXing::Barcode::bytes().data()), ZXing::Size(ZXing::Barcode::bytes()));
+		_bytes = QByteArray(reinterpret_cast<const char*>(ZXing::Barcode::bytes().data()), std::size(ZXing::Barcode::bytes()));
 		auto& pos = ZXing::Barcode::position();
 		auto qp = [&pos](int i) { return QPoint(pos[i].x, pos[i].y); };
 		_position = {qp(0), qp(1), qp(2), qp(3)};

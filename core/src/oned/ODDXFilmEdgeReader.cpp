@@ -6,7 +6,7 @@
 
 #include "ODDXFilmEdgeReader.h"
 
-#include "Barcode.h"
+#include "BarcodeData.h"
 #include "SymbologyIdentifier.h"
 
 #include <optional>
@@ -118,7 +118,7 @@ BarcodeData DXFilmEdgeReader::decodePattern(int rowNumber, PatternView& next, st
 	if (!_opts.tryRotate() && rowNumber < dxState->centerRow - 1)
 		return {};
 
-	// Look for a pattern that is part of both the clock as well as the data track (ommitting the first bar)
+	// Look for a pattern that is part of both the clock as well as the data track (omitting the first bar)
 	constexpr auto Is4x1 = [](const PatternView& view, int spaceInPixel) {
 		// find min/max of 4 consecutive bars/spaces and make sure they are close together
 		auto [m, M] = std::minmax({view[1], view[2], view[3], view[4]});
@@ -224,7 +224,10 @@ BarcodeData DXFilmEdgeReader::decodePattern(int rowNumber, PatternView& next, st
 	clock->xStart = xStart;
 	clock->xStop = xStop;
 
-	return LinearBarcode(BarcodeFormat::DXFilmEdge, txt, rowNumber, xStart, xStop, {});
+	// ISO/IEC 15424:2008(E) specifies 'X' as 'other barcode' that can be used by the decoder manufacturer as he sees fit.
+	SymbologyIdentifier si {'X', 'F'};
+
+	return LinearBarcode(BarcodeFormat::DXFilmEdge, txt, rowNumber, xStart, xStop, si);
 }
 
 } // namespace ZXing::OneD

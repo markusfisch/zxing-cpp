@@ -9,6 +9,7 @@
 
 #include "BarcodeFormat.h"
 #include "CharacterSet.h"
+#include "Version.h"
 
 #include <string_view>
 #include <utility>
@@ -43,8 +44,9 @@ enum class TextMode : unsigned char // see above
 	Plain,   ///< bytes() transcoded to unicode based on ECI info or guessed charset (the default mode prior to 2.0)
 	ECI,     ///< standard content following the ECI protocol with every character set ECI segment transcoded to unicode
 	HRI,     ///< Human Readable Interpretation (dependent on the ContentType)
-	Hex,     ///< bytes() transcoded to ASCII string of HEX values
 	Escaped, ///< Use the EscapeNonGraphical() function (e.g. ASCII 29 will be transcoded to "<GS>")
+	Hex,     ///< bytes() transcoded to ASCII string of HEX values
+	HexECI,  ///< bytesECI() transcoded to ASCII string of HEX values
 };
 
 /**
@@ -79,6 +81,12 @@ public:
 	ReaderOptions& operator=(const ReaderOptions&);
 	ReaderOptions(ReaderOptions&&);
 	ReaderOptions& operator=(ReaderOptions&&);
+
+	// Silence deprecated-declarations warnings, only happening here for deprecated inline functions and only with GCC
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #define ZX_PROPERTY(TYPE, NAME, SETTER, ...) \
 	TYPE NAME() const noexcept; \
@@ -152,6 +160,11 @@ public:
 
 #undef ZX_PROPERTY
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+	/// Check if a specific format is enabled in the formats set
 	bool hasFormat(BarcodeFormats f) const noexcept;
 };
 

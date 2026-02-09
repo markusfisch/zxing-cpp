@@ -6,16 +6,17 @@
 
 #include "GTIN.h"
 #include "Version.h"
-
-#include <iomanip>
+#include "ZXAlgorithms.h"
+#include "ZXingCpp.h"
 
 #ifdef ZXING_READERS
 #include "ReadBarcode.h"
 #endif
 #include "CreateBarcode.h"
-#include "WriteBarcode.h"
 
 #include "gtest/gtest.h"
+
+#include <iomanip>
 
 using namespace ZXing;
 using namespace testing;
@@ -25,6 +26,11 @@ static void check(int line, std::string_view input, CreatorOptions cOpts, std::s
 				  std::string_view contentType, std::string_view position = {}, std::string_view ecLevel = {},
 				  std::string_view version = {}, bool fromBytes = false)
 {
+#ifdef ZXING_EXPERIMENTAL_API
+	if (!SupportedBarcodeFormats(Operation::Create).testFlag(cOpts.format()))
+		return;
+#endif
+
 	auto bc = fromBytes ? CreateBarcodeFromBytes(input, cOpts) : CreateBarcodeFromText(input, cOpts);
 
 	EXPECT_TRUE(bc.isValid()) << "line:" << line;
@@ -42,6 +48,11 @@ static void check(int line, std::string_view input, CreatorOptions cOpts, std::s
 	// EXPECT_EQ(bc.version(), version) << "line:" << line;
 
 #ifdef ZXING_READERS
+#ifdef ZXING_EXPERIMENTAL_API
+	if (!SupportedBarcodeFormats(Operation::Read).testFlag(cOpts.format()))
+		return;
+#endif
+
 	auto br = ReadBarcode(bc.symbol(), ReaderOptions().formats(bc.format()).isPure(true).eanAddOnSymbol(EanAddOnSymbol::Read));
 
 	EXPECT_EQ(bc.isValid(), br.isValid()) << "line:" << line;
@@ -65,7 +76,7 @@ static void check(int line, std::string_view input, CreatorOptions cOpts, std::s
 #endif // ZXING_READERS
 }
 
-TEST(WriteBarcodeTest, ZintASCII)
+TEST(CreateBarcodeTest, ZintASCII)
 {
 	check(__LINE__, "1234", BarcodeFormat::Aztec, "]z0", "1234", "31 32 33 34", false, "]z3\\0000261234", "5D 7A 30 31 32 33 34",
 		  "1234", "Text", "0x0 15x0 15x15 0x15", "58%", "1" /*version*/);
@@ -142,12 +153,12 @@ TEST(WriteBarcodeTest, ZintASCII)
 	// 	  "5D 4A 33 31 32 33 34", "1234", "Text", "1x1 25x1 25x19 1x19", "" /*ecLevel*/, "" /*version*/, 3 /*dataMask*/);
 
 	// DX number only
-	check(__LINE__, "77-2", BarcodeFormat::DXFilmEdge, "" /*si*/, "77-2", "37 37 2D 32", false, "\\00002677-2", "37 37 2D 32", "77-2",
+	check(__LINE__, "77-2", BarcodeFormat::DXFilmEdge, "]XF", "77-2", "37 37 2D 32", false, "]XF\\00002677-2", "5D 58 46 37 37 2D 32", "77-2",
 		  "Text", "0x0 22x0 22x5 0x5");
 
 	// DX number + frame number
-	check(__LINE__, "77-2/62A", BarcodeFormat::DXFilmEdge, "" /*si*/, "77-2/62A", "37 37 2D 32 2F 36 32 41", false, "\\00002677-2/62A",
-		  "37 37 2D 32 2F 36 32 41", "77-2/62A", "Text", "0x0 30x0 30x5 0x5");
+	check(__LINE__, "77-2/62A", BarcodeFormat::DXFilmEdge, "]XF", "77-2/62A", "37 37 2D 32 2F 36 32 41", false, "]XF\\00002677-2/62A",
+		  "5D 58 46 37 37 2D 32 2F 36 32 41", "77-2/62A", "Text", "0x0 30x0 30x5 0x5");
 
 	check(__LINE__, "123456", BarcodeFormat::EAN8, "]E4", "01234565", "30 31 32 33 34 35 36 35", false, "]E4\\00002601234565",
 		  "5D 45 34 30 31 32 33 34 35 36 35", "01234565", "Text", "0x0 66x0 66x59 0x59");
@@ -188,7 +199,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 }
 
 
-TEST(WriteBarcodeTest, EANUPCAddOn)
+TEST(CreateBarcodeTest, EANUPCAddOn)
 {
 	check(__LINE__, "1234567890128+12345", BarcodeFormat::EAN13, "]E3", "123456789012812345", "31 32 33 34 35 36 37 38 39 30 31 32 38 31 32 33 34 35", false,
 		  "]E3\\000026123456789012812345", "5D 45 33 31 32 33 34 35 36 37 38 39 30 31 32 38 31 32 33 34 35", "123456789012812345", "Text");
@@ -200,7 +211,7 @@ TEST(WriteBarcodeTest, EANUPCAddOn)
 		  "]E3\\000026000012000003412345", "5D 45 33 30 30 30 30 31 32 30 30 30 30 30 33 34 31 32 33 34 35", "000012000003412345", "Text");
 }
 
-TEST(WriteBarcodeTest, ZintISO8859_1)
+TEST(CreateBarcodeTest, ZintISO8859_1)
 {
 	// Control chars (SOH & DEL)
 	check(__LINE__, "12\001\17734", BarcodeFormat::Code128, "]C0", "12\001\17734", "31 32 01 7F 33 34", false,
@@ -267,7 +278,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		  "]Q2\\0000261234é", "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 26x0 26x10 0x10", "M", "11");
 }
 
-TEST(WriteBarcodeTest, ZintGS1)
+TEST(CreateBarcodeTest, ZintGS1)
 {
 	check(__LINE__, "(01)12345678901231(20)12", {BarcodeFormat::Aztec, "GS1"}, "]z1", "01123456789012312012",
 		  "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", false, "]z4\\00002601123456789012312012",
@@ -315,7 +326,7 @@ TEST(WriteBarcodeTest, ZintGS1)
 		  "0x0 26x0 26x12 0x12", "M", "17");
 }
 
-TEST(WriteBarcodeTest, ZintBinary)
+TEST(CreateBarcodeTest, ZintBinary)
 {
 	check(__LINE__, std::string("\x00\x80", 2), BarcodeFormat::Code128, "]C0", std::string("\0\xC2\x80", 3),
 		  "00 80", false, std::string("]C0\\000026\0\xC2\x80", 13),
@@ -328,8 +339,40 @@ TEST(WriteBarcodeTest, ZintBinary)
 		  "0x0 15x0 15x15 0x15" /*position*/, "23%" /*ecLevel*/, "1" /*version*/, true /*fromBytes*/);
 }
 
+TEST(CreateBarcodeTest, CreatorOptions)
+{
+	Barcode bc;
+
+	bc = CreateBarcodeFromText("12345", {BarcodeFormat::PDF417});
+	EXPECT_EQ(bc.symbol().height(), 18);
+
+	bc = CreateBarcodeFromText("12345", {BarcodeFormat::PDF417, "rows=3"});
+	EXPECT_EQ(bc.symbol().height(), 9);
+
+	bc = CreateBarcodeFromText("12345", {BarcodeFormat::PDF417, "columns=1"});
+	EXPECT_EQ(bc.symbol().height(), 36);
+
+	bc = CreateBarcodeFromText("(21)123456789", {BarcodeFormat::DataBarExpanded, "stacked,columns=1"});
+	EXPECT_GT(bc.symbol().height(), bc.symbol().width());
+
+	bc = CreateBarcodeFromText("12345", {BarcodeFormat::DataMatrix, "readerInit"});
+	EXPECT_TRUE(bc.readerInit());
+
+	bc = CreateBarcodeFromText("12345abcdefghijklmnopqr", {BarcodeFormat::DataMatrix, "forceSquare"});
+	EXPECT_EQ(bc.symbol().height(), bc.symbol().width());
+
+	bc = CreateBarcodeFromText("12345", {BarcodeFormat::QRCode, "version=5"});
+	EXPECT_EQ(bc.symbol().height(), 37);
+
 #ifdef ZXING_READERS
-TEST(WriteBarcodeTest, RandomDataBar)
+	bc = CreateBarcodeFromText("12345", {BarcodeFormat::QRCode, "dataMask=0"});
+	bc = ReadBarcode(bc.symbol(), ReaderOptions().isPure(true).binarizer(Binarizer::BoolCast));
+	EXPECT_EQ(bc.extra("dataMask"), "0");
+#endif // ZXING_READERS
+}
+
+#if defined(ZXING_READERS) && defined(ZXING_ENABLE_1D)
+TEST(CreateBarcodeTest, RandomDataBar)
 {
 	auto randomTest = [](BarcodeFormat format) {
 		auto read_opts = ReaderOptions().formats(format).isPure(true).binarizer(Binarizer::BoolCast);

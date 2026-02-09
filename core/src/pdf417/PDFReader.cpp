@@ -7,7 +7,7 @@
 
 #include "PDFReader.h"
 
-#include "Barcode.h"
+#include "BarcodeData.h"
 #include "BinaryBitmap.h"
 #include "BitArray.h"
 #include "BitMatrixCursor.h"
@@ -65,7 +65,7 @@ static int GetMaxCodewordWidth(const std::array<Nullable<ResultPoint>, 8>& p)
 					std::max(GetMaxWidth(p[1], p[5]), GetMaxWidth(p[7], p[3]) * CodewordDecoder::MODULES_IN_CODEWORD / MODULES_IN_STOP_PATTERN));
 }
 
-static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotate, bool returnErrors)
+static BarcodesData DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotate, bool returnErrors)
 {
 	Detector::Result detectorResult = Detector::Detect(image, multiple, tryRotate);
 	if (detectorResult.points.empty())
@@ -80,7 +80,7 @@ static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotat
 		return p;
 	};
 
-	Barcodes res;
+	BarcodesData res;
 	for (const auto& points : detectorResult.points) {
 		DecoderResult decoderResult =
 			ScanningDecoder::Decode(*detectorResult.bits, points[4], points[5], points[6], points[7],
@@ -97,17 +97,18 @@ static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotat
 					return p;
 				}
 			};
-			decoderResult
-				.addExtra("Sender", customData->sender)
-				.addExtra("Addressee", customData->addressee)
-				.addExtra("FileId", customData->fileId)
-				.addExtra("FileName", customData->fileName)
-				.addExtra("FileSize", customData->fileSize, int64_t(-1))
-				.addExtra("Timestamp", customData->timestamp, int64_t(-1))
-				.addExtra("Checksum", customData->checksum, -1)
-			;
-			res.emplace_back(std::move(decoderResult), DetectorResult{{}, {point(0), point(2), point(3), point(1)}},
-							 BarcodeFormat::PDF417);
+			if (customData) // might be nullptr if e.g. in case of a FormatError
+				decoderResult
+					.addExtra("Sender", customData->sender)
+					.addExtra("Addressee", customData->addressee)
+					.addExtra("FileId", customData->fileId)
+					.addExtra("FileName", customData->fileName)
+					.addExtra("FileSize", customData->fileSize, int64_t(-1))
+					.addExtra("Timestamp", customData->timestamp, int64_t(-1))
+					.addExtra("Checksum", customData->checksum, -1)
+				;
+			res.emplace_back(MatrixBarcode(std::move(decoderResult), DetectorResult{{}, {point(0), point(2), point(3), point(1)}},
+										   BarcodeFormat::PDF417));
 			if (!multiple)
 				return res;
 		}
@@ -275,7 +276,7 @@ std::vector<int> ReadCodeWords(BitMatrixCursor<POINT> topCur, SymbolInfo info)
 	return codeWords;
 }
 
-static Barcode DecodePure(const BinaryBitmap& image_)
+static BarcodeData DecodePure(const BinaryBitmap& image_)
 {
 	auto pimage = image_.getBitMatrix();
 	if (!pimage)
@@ -311,25 +312,20 @@ static Barcode DecodePure(const BinaryBitmap& image_)
 
 	auto res = DecodeCodewords(codeWords, NumECCodeWords(info.ecLevel));
 
-	return Barcode(std::move(res), {{}, Rectangle<PointI>(left, top, width, height)}, BarcodeFormat::PDF417);
+	return MatrixBarcode(std::move(res), {{}, Rectangle<PointI>(left, top, width, height)}, BarcodeFormat::PDF417);
 }
 
-Barcode
-Reader::decode(const BinaryBitmap& image) const
+BarcodesData Reader::read(const BinaryBitmap& image, [[maybe_unused]] int maxSymbols) const
 {
 	if (_opts.isPure()) {
 		auto res = DecodePure(image);
-		if (res.error() != Error::Checksum)
-			return res;
+		if (res.error != Error::Checksum)
+			return ToVector(std::move(res));
 		// This falls through and tries the non-pure code path if we have a checksum error. This approach is
 		// currently the best option to deal with 'aliased' input like e.g. 03-aliased.png
 	}
 
-	return FirstOrDefault(DoDecode(image, false, _opts.tryRotate(), _opts.returnErrors()));
-}
-
-Barcodes Reader::decode(const BinaryBitmap& image, [[maybe_unused]] int maxSymbols) const
-{
+	// TODO: respect maxSymbols
 	return DoDecode(image, true, _opts.tryRotate(), _opts.returnErrors());
 }
 
