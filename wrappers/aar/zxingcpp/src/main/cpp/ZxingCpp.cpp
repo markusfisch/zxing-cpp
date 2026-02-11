@@ -406,14 +406,14 @@ static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 	auto name = env->GetMethodID(
 		env->FindClass(PACKAGE "BarcodeFormat"),
 		"name", "()Ljava/lang/String;");
-	BarcodeFormats formats;
+	std::vector<BarcodeFormat> formatVec;
 	for (int i = 0, size = env->GetArrayLength(formatArray); i < size; ++i) {
 		auto s = (jstring) env->CallObjectMethod(
 			env->GetObjectArrayElement(formatArray, i),
 			name);
-		formats |= BarcodeFormatFromString(J2CString(env, s));
+		formatVec.push_back(BarcodeFormatFromString(J2CString(env, s)));
 	}
-	return formats;
+	return BarcodeFormats(std::move(formatVec));
 }
 
 static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
