@@ -24,7 +24,10 @@ namespace ZXing {
 std::string ToString(ContentType type)
 {
 	const char* t2s[] = {"Text", "Binary", "Mixed", "GS1", "ISO15434", "UnknownECI"};
-	return t2s[static_cast<int>(type)];
+	int idx = static_cast<int>(type);
+	if (idx < 0 || idx >= Size(t2s))
+		return "InvalidContentType";
+	return t2s[idx];
 }
 
 template <typename FUNC>
@@ -55,8 +58,6 @@ void Content::switchEncoding(ECI eci, bool isECI)
 
 	hasECI |= isECI;
 }
-
-Content::Content() {}
 
 Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet defaultCharset)
 	: bytes(std::move(bytes)), symbology(si), defaultCharset(defaultCharset) {}
@@ -342,10 +343,7 @@ CharacterSet GuessTextEncoding(ByteView bytes, CharacterSet fallback = Character
 					sjisBytesLeft--;
 				}
 			}
-			else if (value == 0x80 || value == 0xA0 || value > 0xEF) {
-				canBeShiftJIS = false;
-			}
-			else if (value < 0x20 && value != 0xa && value != 0xd) {
+			else if (value == 0x80 || value == 0xA0 || value > 0xEF || (value < 0x20 && value != 0xa && value != 0xd)) {
 				canBeShiftJIS = false; // use non-printable ASCII as indication for binary content
 			}
 			else if (value > 0xA0 && value < 0xE0) {

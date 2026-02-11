@@ -21,6 +21,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <string>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -32,8 +33,9 @@ static void PrintUsage(const char* exePath)
 {
 	std::cout << "Usage: " << exePath
 			  << " [-options <creator-options>] [-scale <factor>] [-binary] [-noqz] [-hrt] [-invert] <format> <text> <output>\n"
-			  << "    -options   Comma separated list of symbology specific options and flags\n"
+			  << "    -options   Comma separated list of format specific options and flags\n"
 			  << "    -scale     module size of generated image / negative numbers mean 'target size in pixels'\n"
+			  << "    -rotate	 Rotate image by given angle (90, 180 or 270)\n"
 //			  << "    -encoding  Encoding used to encode input text\n"
 			  << "    -binary    Interpret <text> as a file name containing binary data\n"
 			  << "    -noqz      Print barcode witout quiet zone\n"
@@ -42,15 +44,16 @@ static void PrintUsage(const char* exePath)
 			  << "    -help      Print usage information\n"
 			  << "    -version   Print version information\n"
 			  << "\n"
-			  << "Supported formats are:\n";
-#ifdef ZXING_USE_ZINT
-	for (auto f : BarcodeFormats::all())
-#else
-	for (auto f : BarcodeFormatsFromString("Aztec Codabar Code39 Code93 Code128 DataMatrix EAN8 EAN13 ITF PDF417 QRCode UPCA UPCE"))
-#endif
-		std::cout << "    " << ToString(f) << "\n";
+			  << "Supported formats are (Symbology : Variants):";
+	for (auto f : BarcodeFormats::list(BarcodeFormat::AllCreatable)) {
+		if (Symbology(f) == f || f == BarcodeFormat::DXFilmEdge)
+			std::cout << "\n " << std::setw(13) << ToString(f) << " : ";
+		else
+			std::cout << ToString(f) << ", ";
+	}
+	std::cout << "\n\n";
 
-	std::cout << "Format can be lowercase letters, with or without '-'.\n"
+	std::cout << "Format can be lowercase letters, with or without any of ' -_/'.\n"
 			  << "Output format is determined by file name, supported are png, jpg and svg.\n";
 }
 
@@ -58,6 +61,7 @@ struct CLI
 {
 	BarcodeFormat format = BarcodeFormat::None;
 	int scale = 0;
+	int rotate = 0;
 	std::string input;
 	std::string outPath;
 	std::string options;
@@ -78,6 +82,10 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			if (++i == argc)
 				return false;
 			cli.scale = std::stoi(argv[i]);
+		} else if (is("-rotate")) {
+			if (++i == argc)
+				return false;
+			cli.rotate = std::stoi(argv[i]);
 		// } else if (is("-encoding")) {
 		// 	if (++i == argc)
 		// 		return false;
@@ -103,9 +111,10 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			std::cout << "ZXingWriter " << ZXING_VERSION_STR << "\n";
 			exit(0);
 		} else if (nonOptArgCount == 0) {
-			cli.format = BarcodeFormatFromString(argv[i]);
-			if (cli.format == BarcodeFormat::None) {
-				std::cerr << "Unrecognized format: " << argv[i] << std::endl;
+			try {
+				cli.format = BarcodeFormatFromString(argv[i]);
+			} catch (const std::exception& e) {
+				std::cerr << "Error: " << e.what() << "\n\n";
 				return false;
 			}
 			++nonOptArgCount;
@@ -156,7 +165,7 @@ int main(int argc, char* argv[])
 		auto cOpts = CreatorOptions(cli.format, cli.options);
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts) : CreateBarcodeFromText(cli.input, cOpts);
 
-		auto wOpts = WriterOptions().scale(cli.scale).addQuietZones(cli.addQZs).addHRT(cli.addHRT).invert(cli.invert).rotate(0);
+		auto wOpts = WriterOptions().scale(cli.scale).addQuietZones(cli.addQZs).addHRT(cli.addHRT).invert(cli.invert).rotate(cli.rotate);
 		auto bitmap = WriteBarcodeToImage(barcode, wOpts);
 
 		if (cli.verbose) {
@@ -164,6 +173,7 @@ int main(int argc, char* argv[])
 			std::cout << "Text:       \"" << barcode.text() << "\"\n"
 					  << "Bytes:      " << barcode.text(TextMode::Hex) << "\n"
 					  << "Format:     " << ToString(barcode.format()) << "\n"
+					  << "Symbology:  " << ToString(barcode.symbology()) << "\n"
 					  << "Identifier: " << barcode.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(barcode.contentType()) << "\n"
 					  << "HasECI:     " << barcode.hasECI() << "\n"
@@ -207,11 +217,11 @@ int main(int argc, char* argv[])
 		}
 
 		if (!success) {
-			std::cerr << "Failed to write image: " << cli.outPath << std::endl;
+			std::cerr << "Failed to write image: " << cli.outPath << "\n";
 			return -1;
 		}
 	} catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << e.what() << "\n";
 		return -1;
 	}
 

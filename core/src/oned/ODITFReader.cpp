@@ -17,7 +17,7 @@ namespace ZXing::OneD {
 
 BarcodeData ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const
 {
-	const int minCharCount = _opts.formats().count() == 1 ? 4 : 6; // if we are only looking for ITF, we accept shorter symbols
+	const int minCharCount = _opts.formats().size() == 1 ? 4 : 6; // if we are only looking for ITF, we accept shorter symbols
 	const int minQuietZone = 6; // spec requires 10
 
 	next = FindLeftGuard(next, 4 + 10 + 3, FixedPattern<4, 4>{1, 1, 1, 1}, minQuietZone);
@@ -83,7 +83,7 @@ BarcodeData ITFReader::decodePattern(int rowNumber, PatternView& next, std::uniq
 	if (Size(txt) < (startsAtFirstBar && next.isAtLastBar() ? (minCharCount / 2) : minCharCount))
 		return {};
 
-	Error error = _opts.validateITFCheckSum() && !GTIN::IsCheckDigitValid(txt) ? ChecksumError() : Error();
+	Error error = _opts.validateOptionalCheckSum() && !GTIN::IsCheckDigitValid(txt) ? ChecksumError() : Error();
 
 	// Symbology identifier ISO/IEC 16390:2007 Annex C Table C.1
 	// See also GS1 General Specifications 5.1.2 Figure 5.1.2-2

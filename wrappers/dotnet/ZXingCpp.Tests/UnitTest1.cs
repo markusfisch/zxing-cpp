@@ -7,17 +7,16 @@ namespace ZXingCpp.Tests;
 public class UnitTest1
 {
 	[Fact]
-	public void ValidBarcodeFormatsParsing()
+	public void ValidBarcodeFormatParsing()
 	{
-		Assert.Equal(BarcodeFormats.QRCode, Barcode.FormatsFromString("qrcode"));
-		Assert.Equal(BarcodeFormats.LinearCodes, Barcode.FormatsFromString("linear_codes"));
-		Assert.Equal(BarcodeFormats.None, Barcode.FormatsFromString(""));
+		Assert.Equal(BarcodeFormat.QRCode, BarcodeFormat.Parse("qrcode"));
+		Assert.Equal(BarcodeFormat.AllLinear, BarcodeFormat.Parse("AllLinear"));
 	}
 
 	[Fact]
-	public void InvalidBarcodeFormatsParsing()
+	public void InvalidBarcodeFormatParsing()
 	{
-		Assert.Throws<Exception>(() => Barcode.FormatsFromString("nope"));
+		Assert.Throws<Exception>(() => BarcodeFormat.Parse("nope"));
 	}
 
 	[Fact]
@@ -44,7 +43,7 @@ public class UnitTest1
 
 		Assert.Single(res);
 		Assert.True(res[0].IsValid);
-		Assert.Equal(BarcodeFormats.EAN8, res[0].Format);
+		Assert.Equal(BarcodeFormat.EAN8, res[0].Format);
 		Assert.Equal(expected, res[0].Text);
 		Assert.Equal(Encoding.ASCII.GetBytes(expected), res[0].Bytes);
 		Assert.False(res[0].HasECI);
@@ -56,16 +55,21 @@ public class UnitTest1
 		Assert.False(res[0].IsInverted);
 		Assert.Equal(ErrorType.None, res[0].ErrorType);
 		Assert.Equal("", res[0].ErrorMsg);
+		Assert.Equal(-1, res[0].SequenceIndex);
+		Assert.Equal(-1, res[0].SequenceSize);
+		Assert.Equal("", res[0].SequenceId);
+		Assert.Equal("", res[0].Extra());
+		Assert.Equal("", res[0].Extra("invalid_key"));
 	}
 
 	[Fact]
 	public void Create()
 	{
 		var text = "hello";
-		var res = new Barcode(text, BarcodeFormats.DataMatrix);
+		var res = new Barcode(text, BarcodeFormat.DataMatrix);
 
 		Assert.True(res.IsValid);
-		Assert.Equal(BarcodeFormats.DataMatrix, res.Format);
+		Assert.Equal(BarcodeFormat.DataMatrix, res.Format);
 		Assert.Equal(text, res.Text);
 		Assert.Equal(Encoding.ASCII.GetBytes(text), res.Bytes);
 		Assert.False(res.HasECI);
@@ -73,7 +77,7 @@ public class UnitTest1
 		Assert.Equal(0, res.Orientation);
 		Assert.False(res.IsMirrored);
 		Assert.False(res.IsInverted);
-		Assert.Equal(new PointI() { X = 1, Y = 1 }, res.Position.TopLeft);
+		Assert.Equal(new PointI() { X = 0, Y = 0 }, res.Position.TopLeft);
 		Assert.Equal(ErrorType.None, res.ErrorType);
 		Assert.Equal("", res.ErrorMsg);
 	}

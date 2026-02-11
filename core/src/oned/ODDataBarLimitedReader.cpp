@@ -11,6 +11,8 @@
 #include "BarcodeData.h"
 #include "SymbologyIdentifier.h"
 
+#include <ranges>
+
 //#define PRINT_DEBUG
 #ifndef PRINT_DEBUG
 #define printf(...){}
@@ -38,8 +40,8 @@ static Character ReadDataCharacter(const PatternView& view)
 	auto pattern = NormalizedPatternFromE2E<CHAR_LEN>(view, 26);
 
 	int checkSum = 0;
-	for (auto it = pattern.rbegin(); it != pattern.rend(); ++it)
-		checkSum = 3 * checkSum + *it;
+	for (int v : std::ranges::reverse_view(pattern))
+		checkSum = 3 * checkSum + v;
 
 	using Array7I = std::array<int, 7>;
 	Array7I oddPattern = {}, evnPattern = {};
@@ -148,7 +150,7 @@ BarcodeData DataBarLimitedReader::decodePattern(int rowNumber, PatternView& next
 		if (!left || !right || (left.checksum + 20 * right.checksum) % 89 != checkSum)
 			continue;
 
-		return LinearBarcode(BarcodeFormat::DataBarLimited, ConstructText(left, right), rowNumber, next.pixelsInFront(),
+		return LinearBarcode(BarcodeFormat::DataBarLtd, ConstructText(left, right), rowNumber, next.pixelsInFront(),
 							 next.pixelsTillEnd(), {'e', '0', 0, AIFlag::GS1});
 	}
 

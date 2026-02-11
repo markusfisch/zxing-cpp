@@ -44,8 +44,8 @@ static const char* JavaBarcodeFormatName(BarcodeFormat format)
 	case BarcodeFormat::MicroQRCode: return "MICRO_QR_CODE";
 	case BarcodeFormat::RMQRCode: return "RMQR_CODE";
 	case BarcodeFormat::DataBar: return "DATA_BAR";
-	case BarcodeFormat::DataBarExpanded: return "DATA_BAR_EXPANDED";
-	case BarcodeFormat::DataBarLimited: return "DATA_BAR_LIMITED";
+	case BarcodeFormat::DataBarExp: return "DATA_BAR_EXPANDED";
+	case BarcodeFormat::DataBarLtd: return "DATA_BAR_LIMITED";
 	case BarcodeFormat::DXFilmEdge: return "DX_FILM_EDGE";
 	case BarcodeFormat::UPCA: return "UPC_A";
 	case BarcodeFormat::UPCE: return "UPC_E";
@@ -289,10 +289,10 @@ static BarcodeFormats GetFormats(JNIEnv* env, jclass clsOptions, jobject opts)
 		return {};
 
 	jmethodID midName = env->GetMethodID(env->FindClass(PACKAGE "Format"), "name", "()Ljava/lang/String;");
-	BarcodeFormats ret;
+	std::vector<BarcodeFormat> ret;
 	for (int i = 0, size = env->GetArrayLength(objArray); i < size; ++i) {
 		auto objName = static_cast<jstring>(env->CallObjectMethod(env->GetObjectArrayElement(objArray, i), midName));
-		ret |= BarcodeFormatFromString(J2CString(env, objName));
+		ret.push_back(BarcodeFormatFromString(J2CString(env, objName)));
 	}
 	return ret;
 }
@@ -306,13 +306,14 @@ static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject opts)
 		.tryRotate(GetBooleanField(env, cls, opts, "tryRotate"))
 		.tryInvert(GetBooleanField(env, cls, opts, "tryInvert"))
 		.tryDownscale(GetBooleanField(env, cls, opts, "tryDownscale"))
+		.tryDenoise(GetBooleanField(env, cls, opts, "tryDenoise"))
 		.isPure(GetBooleanField(env, cls, opts, "isPure"))
 		.binarizer(BinarizerFromString(GetEnumField(env, cls, opts, "binarizer", "Binarizer")))
 		.downscaleThreshold(GetIntField(env, cls, opts, "downscaleThreshold"))
 		.downscaleFactor(GetIntField(env, cls, opts, "downscaleFactor"))
 		.minLineCount(GetIntField(env, cls, opts, "minLineCount"))
 		.maxNumberOfSymbols(GetIntField(env, cls, opts, "maxNumberOfSymbols"))
-		.tryCode39ExtendedMode(GetBooleanField(env, cls, opts, "tryCode39ExtendedMode"))
+		.validateOptionalCheckSum(GetBooleanField(env, cls, opts, "validateOptionalCheckSum"))
 		.returnErrors(GetBooleanField(env, cls, opts, "returnErrors"))
 		.eanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, opts, "eanAddOnSymbol", "EanAddOnSymbol")))
 		.textMode(TextModeFromString(GetEnumField(env, cls, opts, "textMode", "TextMode")))

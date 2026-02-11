@@ -4,14 +4,16 @@ project(ZXing)
 
 option (ZXING_READERS "Build with reader support (decoders)" ON)
 set    (ZXING_WRITERS "ON" CACHE STRING "Build with old and/or new writer (encoder) backend (OFF/ON/OLD/NEW/BOTH)")
-option (ZXING_C_API "Build the C-API" OFF)
+option (ZXING_C_API "Build the C-API" ON)
 option (ZXING_EXPERIMENTAL_API "Build with experimental API" OFF)
 option (ZXING_EXAMPLES "Build the example barcode reader/writer applications" ON)
 option (ZXING_BLACKBOX_TESTS "Build the black box reader/writer tests" OFF)
 option (ZXING_UNIT_TESTS "Build the unit tests (don't enable for production builds)" OFF)
-option (ZXING_INSTALL_TEST "Test if the installed/public API works" OFF)
+option (ZXING_TEST_DOTNET "Test if the .NET wrapper works" OFF)
+option (ZXING_TEST_INSTALL "Test if the installed/public API works" OFF)
 option (ZXING_PYTHON_MODULE "Build the python module" OFF)
 set    (ZXING_DEPENDENCIES "AUTO" CACHE STRING "Fetch from github or use locally installed (AUTO/GITHUB/LOCAL)")
+option (ZXING_CLANG_TIDY "Enable clang-tidy analysis" OFF)
 
 if (WIN32)
     option (BUILD_SHARED_LIBS "Build and link as shared library" OFF)
@@ -58,6 +60,21 @@ endif()
 
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
+if (ZXING_CLANG_TIDY)
+    find_program(CMAKE_CXX_CLANG_TIDY NAMES "clang-tidy" DOC "Path to clang-tidy executable")
+    if (NOT CMAKE_CXX_CLANG_TIDY)
+        message(WARNING "clang-tidy not found.")
+    else()
+        message(STATUS "clang-tidy found: ${CMAKE_CXX_CLANG_TIDY}")
+        set(ZXING_DISABLE_PCH ON)
+    endif()
+endif()
+
+# make installed binaries relocatable on macOS and Linux
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)  # improve build reproducibility
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+set(CMAKE_INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path/../lib>$<$<PLATFORM_ID:Linux>:$ORIGIN/../lib>")
+
 add_subdirectory (core)
 
 enable_testing()
@@ -66,6 +83,7 @@ include(zxing.cmake)
 
 if (ZXING_EXAMPLES)
     add_subdirectory (example)
+    add_subdirectory (wrappers/qt)
 endif()
 if (ZXING_BLACKBOX_TESTS)
     add_subdirectory (test/blackbox)
@@ -73,7 +91,10 @@ endif()
 if (ZXING_UNIT_TESTS)
     add_subdirectory (test/unit)
 endif()
-if (ZXING_INSTALL_TEST)
+if (ZXING_TEST_DOTNET)
+    add_subdirectory (wrappers/dotnet)
+endif()
+if (ZXING_TEST_INSTALL)
     add_test(
         NAME InstallTest
         COMMAND

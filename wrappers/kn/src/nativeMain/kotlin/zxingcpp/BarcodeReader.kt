@@ -61,8 +61,18 @@ open class ReaderOptions {
 		get() = Binarizer.fromCValue(ZXing_ReaderOptions_getBinarizer(cValue))
 		set(value) = ZXing_ReaderOptions_setBinarizer(cValue, value.cValue)
 	var formats: Set<BarcodeFormat>
-		get() = ZXing_ReaderOptions_getFormats(cValue).parseIntoBarcodeFormat()
-		set(value) = ZXing_ReaderOptions_setFormats(cValue, value.toValue())
+		get() = memScoped {
+			val countVar = alloc<IntVar>()
+			val ptr = ZXing_ReaderOptions_getFormats(cValue, countVar.ptr)
+			ptr.toKotlinSet(countVar.value).also { if (ptr != null) ZXing_free(ptr) }
+		}
+		set(value) = memScoped {
+			val arr = allocArray<ZXing_BarcodeFormat.Var>(value.size)
+			value.forEachIndexed { index, value ->
+				arr[index].value = value.cValue
+			}
+			ZXing_ReaderOptions_setFormats(cValue, arr, value.size)
+		}
 	var eanAddOnSymbol: EanAddOnSymbol
 		get() = EanAddOnSymbol.fromCValue(ZXing_ReaderOptions_getEanAddOnSymbol(cValue))
 		set(value) = ZXing_ReaderOptions_setEanAddOnSymbol(cValue, value.cValue)

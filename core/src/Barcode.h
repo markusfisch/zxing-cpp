@@ -25,6 +25,7 @@ class CreatorOptions;
 class ReaderOptions;
 class WriterOptions;
 class Barcode;
+struct BarcodeData;
 
 using Position = QuadrilateralI;
 using Barcodes = std::vector<Barcode>;
@@ -45,7 +46,7 @@ namespace BarcodeExtra {
  */
 class Barcode
 {
-	using Data = struct BarcodeData;
+	using Data = BarcodeData;
 
 	std::shared_ptr<Data> d;
 
@@ -65,7 +66,15 @@ public:
 
 	const Error& error() const;
 
+	/**
+	 * @brief format returns the BarcodeFormat of the barcode
+	 */
 	BarcodeFormat format() const;
+
+	/**
+	 * @brief symbology returns the symbology of the barcode format (e.g. EAN/UPC for EAN13, EAN8, UPCA, etc.)
+	 */
+	BarcodeFormat symbology() const { return Symbology(format()); }
 
 	/**
 	 * @brief bytes is the raw / standard content without any modifications like character set conversions
@@ -194,7 +203,7 @@ public:
 /**
  * @brief Merge a list of Barcodes from one Structured Append sequence to a single barcode
  */
-Barcode MergeStructuredAppendSequence(const Barcodes& results);
+Barcode MergeStructuredAppendSequence(const Barcodes& barcodes);
 
 /**
  * @brief Automatically merge all Structured Append sequences found in the given list of barcodes

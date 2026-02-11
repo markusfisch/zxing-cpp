@@ -33,30 +33,30 @@ namespace ZXing::OneD {
 
 Reader::Reader(const ReaderOptions& opts) : ZXing::Reader(opts)
 {
+	using enum BarcodeFormat;
+
 	_readers.reserve(8);
 
-	auto formats = opts.formats().empty() ? BarcodeFormat::Any : opts.formats();
-
-	if (formats.testFlags(BarcodeFormat::EAN13 | BarcodeFormat::UPCA | BarcodeFormat::EAN8 | BarcodeFormat::UPCE))
+	if (opts.hasAnyFormat(EANUPC))
 		_readers.emplace_back(new MultiUPCEANReader(opts));
 
-	if (formats.testFlag(BarcodeFormat::Code39))
+	if (opts.hasAnyFormat(Code39))
 		_readers.emplace_back(new Code39Reader(opts));
-	if (formats.testFlag(BarcodeFormat::Code93))
+	if (opts.hasAnyFormat(Code93))
 		_readers.emplace_back(new Code93Reader(opts));
-	if (formats.testFlag(BarcodeFormat::Code128))
+	if (opts.hasAnyFormat(Code128))
 		_readers.emplace_back(new Code128Reader(opts));
-	if (formats.testFlag(BarcodeFormat::ITF))
+	if (opts.hasAnyFormat(ITF))
 		_readers.emplace_back(new ITFReader(opts));
-	if (formats.testFlag(BarcodeFormat::Codabar))
+	if (opts.hasAnyFormat(Codabar))
 		_readers.emplace_back(new CodabarReader(opts));
-	if (formats.testFlag(BarcodeFormat::DataBar))
+	if (opts.hasFormat(DataBar | DataBarOmni | DataBarStk | DataBarStkOmni))
 		_readers.emplace_back(new DataBarReader(opts));
-	if (formats.testFlag(BarcodeFormat::DataBarExpanded))
+	if (opts.hasFormat(DataBar | DataBarExp | DataBarExpStk))
 		_readers.emplace_back(new DataBarExpandedReader(opts));
-	if (formats.testFlag(BarcodeFormat::DataBarLimited))
+	if (opts.hasFormat(DataBar | DataBarLtd))
 		_readers.emplace_back(new DataBarLimitedReader(opts));
-	if (formats.testFlag(BarcodeFormat::DXFilmEdge))
+	if (opts.hasAnyFormat(DXFilmEdge))
 		_readers.emplace_back(new DXFilmEdgeReader(opts));
 }
 
@@ -133,7 +133,7 @@ BarcodesData DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, co
 		bool val = false;
 		int x = 0;
 		for (auto b : bars) {
-			for(int j = 0; j < b; ++j)
+			for(unsigned j = 0; j < b; ++j)
 				dbg.set(x++, rowNumber, val);
 			val = !val;
 		}

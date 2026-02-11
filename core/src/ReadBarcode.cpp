@@ -33,48 +33,26 @@ namespace ZXing {
 
 struct ReaderOptions::Data
 {
-	bool tryHarder                : 1;
-	bool tryRotate                : 1;
-	bool tryInvert                : 1;
-	bool tryDownscale             : 1;
+	bool tryHarder                : 1 = true;
+	bool tryRotate                : 1 = true;
+	bool tryInvert                : 1 = true;
+	bool tryDownscale             : 1 = true;
 #ifdef ZXING_EXPERIMENTAL_API
-	bool tryDenoise               : 1;
+	bool tryDenoise               : 1 = false;
 #endif
-	bool isPure                   : 1;
-	bool tryCode39ExtendedMode    : 1;
-	bool validateCode39CheckSum   : 1;
-	bool validateITFCheckSum      : 1;
-	bool returnErrors             : 1;
-	uint8_t downscaleFactor       : 3;
-	EanAddOnSymbol eanAddOnSymbol : 2;
-	Binarizer binarizer           : 2;
-	TextMode textMode             : 3;
-	CharacterSet characterSet     : 6;
+	bool isPure                   : 1 = false;
+	bool validateOptionalCheckSum : 1 = false;
+	bool returnErrors             : 1 = false;
+	uint8_t downscaleFactor       : 3 = 3; // values 2, 3, 4
+	EanAddOnSymbol eanAddOnSymbol : 2 = EanAddOnSymbol::Ignore;
+	Binarizer binarizer           : 2 = Binarizer::LocalAverage;
+	TextMode textMode             : 3 = TextMode::HRI;
+	CharacterSet characterSet     : 6 = CharacterSet::Unknown;
 
 	uint8_t minLineCount          = 2;
 	uint8_t maxNumberOfSymbols    = 0xff;
 	uint16_t downscaleThreshold   = 500;
-	BarcodeFormats formats        = BarcodeFormat::None;
-
-	Data()
-		: tryHarder(1),
-		  tryRotate(1),
-		  tryInvert(1),
-		  tryDownscale(1),
-#ifdef ZXING_EXPERIMENTAL_API
-		  tryDenoise(0),
-#endif
-		  isPure(0),
-		  tryCode39ExtendedMode(1),
-		  validateCode39CheckSum(0),
-		  validateITFCheckSum(0),
-		  returnErrors(0),
-		  downscaleFactor(3),
-		  eanAddOnSymbol(EanAddOnSymbol::Ignore),
-		  binarizer(Binarizer::LocalAverage),
-		  textMode(TextMode::HRI),
-		  characterSet(CharacterSet::Unknown)
-	{}
+	BarcodeFormats formats        = {};
 };
 
 ReaderOptions::ReaderOptions() : d(std::make_unique<Data>()) {}
@@ -90,15 +68,18 @@ ReaderOptions& ReaderOptions::operator=(const ReaderOptions& other)
 }
 
 // move
-ReaderOptions::ReaderOptions(ReaderOptions&&) = default;
-ReaderOptions& ReaderOptions::operator=(ReaderOptions&&) = default;
+ReaderOptions::ReaderOptions(ReaderOptions&&) noexcept = default;
+ReaderOptions& ReaderOptions::operator=(ReaderOptions&&) noexcept = default;
+
+const BarcodeFormats& ReaderOptions::formats() const noexcept { return d->formats; }
+ReaderOptions& ReaderOptions::formats(BarcodeFormats&& v) & { return (void)(d->formats = std::move(v)), *this; }
+ReaderOptions&& ReaderOptions::formats(BarcodeFormats&& v) && { return (void)(d->formats = std::move(v)), std::move(*this); }
 
 #define ZX_PROPERTY(TYPE, NAME, SETTER) \
 	TYPE ReaderOptions::NAME() const noexcept { return d->NAME; } \
 	ReaderOptions& ReaderOptions::NAME(TYPE v) & { return (void)(d->NAME = std::move(v)), *this; } \
 	ReaderOptions&& ReaderOptions::NAME(TYPE v) && { return (void)(d->NAME = std::move(v)), std::move(*this); }
 
-ZX_PROPERTY(BarcodeFormats, formats, setFormats)
 ZX_PROPERTY(bool, tryHarder, setTryHarder)
 ZX_PROPERTY(bool, tryRotate, setTryRotate)
 ZX_PROPERTY(bool, tryInvert, setTryInvert)
@@ -112,9 +93,7 @@ ZX_PROPERTY(uint16_t, downscaleThreshold, setDownscaleThreshold)
 ZX_PROPERTY(uint8_t, downscaleFactor, setDownscaleFactor)
 ZX_PROPERTY(uint8_t, minLineCount, setMinLineCount)
 ZX_PROPERTY(uint8_t, maxNumberOfSymbols, setMaxNumberOfSymbols)
-ZX_PROPERTY(bool, tryCode39ExtendedMode, setTryCode39ExtendedMode)
-ZX_PROPERTY(bool, validateCode39CheckSum, setValidateCode39CheckSum)
-ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum)
+ZX_PROPERTY(bool, validateOptionalCheckSum, setValidateOptionalCheckSum)
 ZX_PROPERTY(bool, returnErrors, setReturnErrors)
 ZX_PROPERTY(EanAddOnSymbol, eanAddOnSymbol, setEanAddOnSymbol)
 ZX_PROPERTY(TextMode, textMode, setTextMode)
@@ -133,11 +112,15 @@ ReaderOptions&& ReaderOptions::characterSet(std::string_view v) &&
 	return std::move(*this);
 }
 
-bool ReaderOptions::hasFormat(BarcodeFormats f) const noexcept
+bool ReaderOptions::hasFormat(const BarcodeFormats& formats) const noexcept
 {
-	return d->formats.testFlags(f) || d->formats.empty();
+	return d->formats.empty() || std::any_of(formats.begin(), formats.end(), [this](BarcodeFormat bt) { return bt <= d->formats; });
 }
 
+bool ReaderOptions::hasAnyFormat(const BarcodeFormats& formats) const noexcept
+{
+	return d->formats.empty() || std::any_of(formats.begin(), formats.end(), [this](BarcodeFormat bt) { return bt & d->formats; });
+}
 
 // ==============================================================================
 // ReadBarcode implementation
@@ -281,10 +264,11 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 
 	std::unique_ptr<MultiFormatReader> closedReader;
 #ifdef ZXING_EXPERIMENTAL_API
-	auto formatsBenefittingFromClosing = BarcodeFormat::Aztec | BarcodeFormat::DataMatrix | BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode;
+	using enum BarcodeFormat;
+	BarcodeFormats formatsBenefittingFromClosing = Aztec | DataMatrix | QRCode;
 	ReaderOptions closedOptions = opts;
-	if (opts.tryDenoise() && opts.hasFormat(formatsBenefittingFromClosing) && _iv.height() >= 3) {
-		closedOptions.formats((opts.formats().empty() ? BarcodeFormat::Any : opts.formats()) & formatsBenefittingFromClosing);
+	if (opts.tryDenoise() && opts.hasAnyFormat(formatsBenefittingFromClosing) && _iv.height() >= 3) {
+		closedOptions.formats(opts.formats().empty() ? formatsBenefittingFromClosing : formatsBenefittingFromClosing & opts.formats());
 		closedReader = std::make_unique<MultiFormatReader>(closedOptions);
 	}
 #endif
@@ -321,6 +305,16 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 					return res;
 			}
 		}
+	}
+
+	if (opts.returnErrors()) {
+		// if symbols overlap and one is in error remove it
+		for (auto a = res.begin(); a != res.end(); ++a)
+			for (auto b = std::next(a); b != res.end(); ++b)
+				if (HaveIntersectingBoundingBoxes(a->position(), b->position()) && (a->error() != b->error()))
+					*(a->error() ? a : b) = BarcodeData();
+
+		std::erase_if(res, [](auto&& r) { return r.format() == BarcodeFormat::None; });
 	}
 
 	return res;
