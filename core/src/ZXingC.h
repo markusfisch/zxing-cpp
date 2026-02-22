@@ -39,7 +39,7 @@ typedef struct ZXing_WriterOptions ZXing_WriterOptions;
 #endif
 
 /*
- * ZXing/ImageView.h
+ * MARK: - ImageView.h
  */
 
 typedef enum {
@@ -71,7 +71,7 @@ int ZXing_Image_height(const ZXing_Image* img);
 ZXing_ImageFormat ZXing_Image_format(const ZXing_Image* img);
 
 /*
- * ZXing/BarcodeFormat.h
+ * MARK: - BarcodeFormat.h
  */
 
 typedef enum
@@ -92,7 +92,7 @@ char* ZXing_BarcodeFormatsToString(const ZXing_BarcodeFormat* formats, int count
 
 
 /*
- * ZXing/Barcode.h
+ * MARK: - Barcode.h
  */
 
 typedef enum
@@ -156,7 +156,7 @@ const ZXing_Barcode* ZXing_Barcodes_at(const ZXing_Barcodes* barcodes, int i);
 ZXing_Barcode* ZXing_Barcodes_move(ZXing_Barcodes* barcodes, int i);
 
 /*
- * ZXing/ReaderOptions.h
+ * MARK: - ReaderOptions.h
  */
 
 typedef enum
@@ -195,7 +195,7 @@ void ZXing_ReaderOptions_setTryDownscale(ZXing_ReaderOptions* opts, bool tryDown
 	void ZXing_ReaderOptions_setTryDenoise(ZXing_ReaderOptions* opts, bool tryDenoise);
 #endif
 void ZXing_ReaderOptions_setIsPure(ZXing_ReaderOptions* opts, bool isPure);
-void ZXing_ReaderOptions_setValidateOptionalCheckSum(ZXing_ReaderOptions* opts, bool validateOptionalCheckSum);
+void ZXing_ReaderOptions_setValidateOptionalChecksum(ZXing_ReaderOptions* opts, bool validateOptionalChecksum);
 void ZXing_ReaderOptions_setReturnErrors(ZXing_ReaderOptions* opts, bool returnErrors);
 void ZXing_ReaderOptions_setFormats(ZXing_ReaderOptions* opts, const ZXing_BarcodeFormat* formats, int count);
 void ZXing_ReaderOptions_setBinarizer(ZXing_ReaderOptions* opts, ZXing_Binarizer binarizer);
@@ -212,7 +212,7 @@ bool ZXing_ReaderOptions_getTryDownscale(const ZXing_ReaderOptions* opts);
 	bool ZXing_ReaderOptions_getTryDenoise(const ZXing_ReaderOptions* opts);
 #endif
 bool ZXing_ReaderOptions_getIsPure(const ZXing_ReaderOptions* opts);
-bool ZXing_ReaderOptions_getValidateOptionalCheckSum(const ZXing_ReaderOptions* opts);
+bool ZXing_ReaderOptions_getValidateOptionalChecksum(const ZXing_ReaderOptions* opts);
 bool ZXing_ReaderOptions_getReturnErrors(const ZXing_ReaderOptions* opts);
 ZXing_BarcodeFormat* ZXing_ReaderOptions_getFormats(const ZXing_ReaderOptions* opts, int* outCount);
 ZXing_Binarizer ZXing_ReaderOptions_getBinarizer(const ZXing_ReaderOptions* opts);
@@ -222,7 +222,7 @@ int ZXing_ReaderOptions_getMinLineCount(const ZXing_ReaderOptions* opts);
 int ZXing_ReaderOptions_getMaxNumberOfSymbols(const ZXing_ReaderOptions* opts);
 
 /*
- * ZXing/ReadBarcode.h
+ * MARK: - ReadBarcode.h
  */
 
 /** Note: opts is optional, i.e. it can be NULL, which will imply default settings. */
@@ -230,7 +230,7 @@ ZXing_Barcodes* ZXing_ReadBarcodes(const ZXing_ImageView* iv, const ZXing_Reader
 
 
 /*
- * ZXing/WriteBarcode.h
+ * MARK: - CreateBarcode.h
  */
 
 ZXing_CreatorOptions* ZXing_CreatorOptions_new(ZXing_BarcodeFormat format);
@@ -241,6 +241,12 @@ ZXing_BarcodeFormat ZXing_CreatorOptions_getFormat(const ZXing_CreatorOptions* o
 void ZXing_CreatorOptions_setOptions(ZXing_CreatorOptions* opts, const char* options);
 char* ZXing_CreatorOptions_getOptions(const ZXing_CreatorOptions* opts);
 
+ZXing_Barcode* ZXing_CreateBarcodeFromText(const char* data, int size, const ZXing_CreatorOptions* opts);
+ZXing_Barcode* ZXing_CreateBarcodeFromBytes(const void* data, int size, const ZXing_CreatorOptions* opts);
+
+/*
+ * MARK: - WriteBarcode.h
+ */
 
 ZXing_WriterOptions* ZXing_WriterOptions_new();
 void ZXing_WriterOptions_delete(ZXing_WriterOptions* opts);
@@ -257,9 +263,6 @@ bool ZXing_WriterOptions_getAddHRT(const ZXing_WriterOptions* opts);
 void ZXing_WriterOptions_setAddQuietZones(ZXing_WriterOptions* opts, bool addQuietZones);
 bool ZXing_WriterOptions_getAddQuietZones(const ZXing_WriterOptions* opts);
 
-
-ZXing_Barcode* ZXing_CreateBarcodeFromText(const char* data, int size, const ZXing_CreatorOptions* opts);
-ZXing_Barcode* ZXing_CreateBarcodeFromBytes(const void* data, int size, const ZXing_CreatorOptions* opts);
 
 /** Note: opts is optional, i.e. it can be NULL, which will imply default settings. */
 char* ZXing_WriteBarcodeToSVG(const ZXing_Barcode* barcode, const ZXing_WriterOptions* opts);

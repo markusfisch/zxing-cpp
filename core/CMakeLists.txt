@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project (ZXing VERSION "3.0.1")
+project (ZXing VERSION "3.0.2")
 set (ZXING_VERSION_SUFFIX "")
 set (ZXING_SONAME 4) # see https://github.com/zxing-cpp/zxing-cpp/issues/333
 
@@ -81,7 +81,7 @@ if(HAS_FILE_PREFIX_ARG)
     list (APPEND ZXING_PRIVATE_FLAGS "${FILE_PREFIX_ARG}")
 endif()
 
-################# Source files
+# MARK: - COMMON_FILES
 
 set (COMMON_FILES
     src/Barcode.h
@@ -207,6 +207,8 @@ if (ZXING_WRITERS_OLD)
     )
 endif()
 
+# MARK: - PUBLIC_HEADERS
+
 # define subset of public headers that get distributed with the binaries
 set (PUBLIC_HEADERS
     src/Barcode.h
@@ -240,6 +242,8 @@ if (ZXING_WRITERS_OLD)
     )
 endif()
 # end of public header set
+
+# MARK: - READERS/WRITERS
 
 if (ZXING_READERS AND ZXING_ENABLE_AZTEC)
     set (AZTEC_FILES ${AZTEC_FILES}
@@ -480,6 +484,8 @@ source_group (Sources\\oned FILES ${ONED_FILES})
 source_group (Sources\\pdf417 FILES ${PDF417_FILES})
 source_group (Sources\\qrcode FILES ${QRCODE_FILES})
 
+# MARK: - Library target
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
@@ -520,6 +526,8 @@ if (ZXING_READERS OR ZXING_WRITERS_OLD)
     target_sources(ZXing PRIVATE ${LIBZUECI_FILES})
     source_group (Sources\\libzueci FILES ${LIBZUECI_FILES})
 endif()
+
+# MARK: - ZINT
 
 if (ZXING_WRITERS_NEW)
     if (ZXING_USE_BUNDLED_ZINT)
@@ -617,7 +625,7 @@ if (ZXING_WRITERS_NEW)
     else()
         include(../zxing.cmake)
         zxing_add_package(zint zint https://github.com/zint/zint.git 2.16.0)
-        target_link_libraries (ZXing PRIVATE $<IF:$<BOOL:${ZINT_STATIC}>,zint-static,zint>)
+        target_link_libraries (ZXing PRIVATE $<IF:$<BOOL:${ZINT_STATIC}>,zint::zint-static,zint::zint>)
     endif()
 endif()
 
@@ -637,6 +645,8 @@ endif()
 
 # TODO: use FILE_SET HEADERS instead of PUBLIC_HEADER and target_sources, once CMake 3.23+ is required
 set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
+
+# MARK: - Precompiled headers
 
 set(PRECOMPILE_HEADERS ${PUBLIC_HEADERS})
 list(REMOVE_ITEM PRECOMPILE_HEADERS
@@ -683,6 +693,8 @@ if(CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo")
         PROPERTIES SKIP_PRECOMPILE_HEADERS ON COMPILE_FLAGS -Os)
     endif()
 endif()
+
+# MARK: - Installation
 
 include (GNUInstallDirs)
 
