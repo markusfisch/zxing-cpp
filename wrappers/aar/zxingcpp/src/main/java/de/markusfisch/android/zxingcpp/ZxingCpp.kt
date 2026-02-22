@@ -276,7 +276,7 @@ xmlns="http://www.w3.org/2000/svg">
 		format: BarcodeFormat,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = -1,
+		margin: Int = 1,
 		ecLevel: Int = -1,
 		setColor: Int = 0xff000000.toInt(),
 		unsetColor: Int = 0xffffffff.toInt()
@@ -289,7 +289,7 @@ xmlns="http://www.w3.org/2000/svg">
 	fun <T> encodeAsSvg(
 		content: T,
 		format: BarcodeFormat,
-		margin: Int = -1,
+		margin: Int = 1,
 		ecLevel: Int = -1
 	): String = content.encode(
 		format.toString(),
@@ -300,7 +300,7 @@ xmlns="http://www.w3.org/2000/svg">
 	fun <T> encodeAsText(
 		content: T,
 		format: BarcodeFormat,
-		margin: Int = -1,
+		margin: Int = 1,
 		ecLevel: Int = -1,
 		inverted: Boolean = false
 	): String = content.encode(
@@ -313,7 +313,7 @@ xmlns="http://www.w3.org/2000/svg">
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = -1,
+		margin: Int = 1,
 		ecLevel: Int = -1
 	): BitMatrix = when (this) {
 		is String -> encodeString(
@@ -334,7 +334,7 @@ xmlns="http://www.w3.org/2000/svg">
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = -1,
+		margin: Int = 1,
 		ecLevel: Int = -1
 	): BitMatrix
 
@@ -343,7 +343,7 @@ xmlns="http://www.w3.org/2000/svg">
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = -1,
+		margin: Int = 1,
 		ecLevel: Int = -1
 	): BitMatrix
 
