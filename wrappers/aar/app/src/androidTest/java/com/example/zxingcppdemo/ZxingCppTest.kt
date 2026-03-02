@@ -15,11 +15,11 @@ class ZxingCppTest {
 	fun encodeDecode() {
 		encodeDecodeString(
 			"The quick brown fox jumps over the lazy dog.",
-			BarcodeFormat.QR_CODE
+			BarcodeFormat.QRCode
 		)
 		encodeDecodeString(
 			"This is test 😁",
-			BarcodeFormat.DATA_MATRIX
+			BarcodeFormat.DataMatrix
 		)
 	}
 
@@ -30,10 +30,10 @@ class ZxingCppTest {
 		for (i in 0 until size) {
 			bytes[i] = (i % 256).toByte()
 		}
-		encodeDecodeByteArray(bytes, BarcodeFormat.QR_CODE)
-		encodeDecodeByteArray(bytes, BarcodeFormat.AZTEC)
-		encodeDecodeByteArray(bytes, BarcodeFormat.DATA_MATRIX)
-		encodeDecodeByteArray(bytes, BarcodeFormat.PDF_417)
+		encodeDecodeByteArray(bytes, BarcodeFormat.QRCode)
+		encodeDecodeByteArray(bytes, BarcodeFormat.Aztec)
+		encodeDecodeByteArray(bytes, BarcodeFormat.DataMatrix)
+		encodeDecodeByteArray(bytes, BarcodeFormat.PDF417)
 	}
 }
 

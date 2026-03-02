@@ -241,7 +241,7 @@ class MainActivity : AppCompatActivity() {
 	private fun scanCpp(image: ImageProxy, cropRect: Rect): String = try {
 		readerOptions.apply {
 			formats = if (chipQrCode.isChecked) {
-				setOf(BarcodeFormat.QR_CODE)
+				setOf(BarcodeFormat.QRCode)
 			} else {
 				setOf()
 			}

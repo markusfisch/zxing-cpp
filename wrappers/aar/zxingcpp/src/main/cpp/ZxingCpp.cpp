@@ -53,26 +53,33 @@ static std::string J2CString(JNIEnv* env, jstring str)
 static const char* JavaBarcodeFormatName(BarcodeFormat format)
 {
 	switch (format) {
-	case BarcodeFormat::None: return "NONE";
-	case BarcodeFormat::Aztec: return "AZTEC";
-	case BarcodeFormat::Codabar: return "CODABAR";
-	case BarcodeFormat::Code39: return "CODE_39";
-	case BarcodeFormat::Code93: return "CODE_93";
-	case BarcodeFormat::Code128: return "CODE_128";
-	case BarcodeFormat::DataMatrix: return "DATA_MATRIX";
-	case BarcodeFormat::EAN8: return "EAN_8";
-	case BarcodeFormat::EAN13: return "EAN_13";
+	case BarcodeFormat::None: return "None";
+	case BarcodeFormat::Aztec: return "Aztec";
+	case BarcodeFormat::Codabar: return "Codabar";
+	case BarcodeFormat::Code39: return "Code39";
+	case BarcodeFormat::Code39Ext: return "Code39Ext";
+	case BarcodeFormat::Code32: return "Code32";
+	case BarcodeFormat::PZN: return "PZN";
+	case BarcodeFormat::Code93: return "Code93";
+	case BarcodeFormat::Code128: return "Code128";
+	case BarcodeFormat::DataMatrix: return "DataMatrix";
+	case BarcodeFormat::EAN8: return "EAN8";
+	case BarcodeFormat::EAN13: return "EAN13";
 	case BarcodeFormat::ITF: return "ITF";
-	case BarcodeFormat::MaxiCode: return "MAXICODE";
-	case BarcodeFormat::PDF417: return "PDF_417";
-	case BarcodeFormat::QRCode: return "QR_CODE";
-	case BarcodeFormat::MicroQRCode: return "MICRO_QR_CODE";
-	case BarcodeFormat::RMQRCode: return "RMQR_CODE";
-	case BarcodeFormat::DataBar: return "DATA_BAR";
-	case BarcodeFormat::DataBarExpanded: return "DATA_BAR_EXPANDED";
-	case BarcodeFormat::DXFilmEdge: return "DX_FILM_EDGE";
-	case BarcodeFormat::UPCA: return "UPC_A";
-	case BarcodeFormat::UPCE: return "UPC_E";
+	case BarcodeFormat::MaxiCode: return "MaxiCode";
+	case BarcodeFormat::PDF417: return "PDF417";
+	case BarcodeFormat::QRCode: return "QRCode";
+	case BarcodeFormat::MicroQRCode: return "MicroQRCode";
+	case BarcodeFormat::RMQRCode: return "RMQRCode";
+	case BarcodeFormat::DataBar: return "DataBar";
+	case BarcodeFormat::DataBarOmni: return "DataBarOmni";
+	case BarcodeFormat::DataBarStk: return "DataBarStk";
+	case BarcodeFormat::DataBarLtd: return "DataBarLtd";
+	case BarcodeFormat::DataBarExp: return "DataBarExp";
+	case BarcodeFormat::DataBarExpStk: return "DataBarExpStk";
+	case BarcodeFormat::DXFilmEdge: return "DXFilmEdge";
+	case BarcodeFormat::UPCA: return "UPCA";
+	case BarcodeFormat::UPCE: return "UPCE";
 	default: throw std::invalid_argument("Invalid format");
 	}
 }
@@ -540,13 +547,63 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_readBitmap(
 	return Read(env, image, CreateReaderOptions(env, hints));
 }
 
+static std::string ResolveErrorLevel(
+	BarcodeFormat barcodeFormat,
+	int eccLevel)
+{
+	std::string s;
+
+	if (barcodeFormat == BarcodeFormat::QRCode ||
+		barcodeFormat == BarcodeFormat::QRCodeModel1 ||
+		barcodeFormat == BarcodeFormat::QRCodeModel2)
+	{
+		constexpr char QR_LEVELS[] = {'L', 'M', 'Q', 'H'};
+		if (eccLevel >= 0 && eccLevel <= 8) {
+			// Keep legacy 0..8 behavior:
+			// 0..2 -> L, 3..4 -> M, 5..6 -> Q, 7..8 -> H.
+			int index = eccLevel <= 2 ? 0 : (eccLevel - 1) / 2;
+			s = "ecLevel=";
+			s.push_back(QR_LEVELS[index]);
+		}
+	} else if (barcodeFormat == BarcodeFormat::MicroQRCode) {
+		constexpr char MQR_LEVELS[] = {'L', 'M', 'Q'};
+		if (eccLevel >= 0 && eccLevel <= 8) {
+			// Micro QR supports L/M/Q only.
+			int index = eccLevel / 3;
+			if (index > 2) {
+				index = 2;
+			}
+			s = "ecLevel=";
+			s.push_back(MQR_LEVELS[index]);
+		}
+	} else if (barcodeFormat == BarcodeFormat::RMQRCode) {
+		if (eccLevel >= 0 && eccLevel <= 8) {
+			// rMQR supports M/H only.
+			s = eccLevel <= 4 ? "ecLevel=M" : "ecLevel=H";
+		}
+	} else if (barcodeFormat == BarcodeFormat::Aztec ||
+		barcodeFormat == BarcodeFormat::AztecCode ||
+		barcodeFormat == BarcodeFormat::AztecRune)
+	{
+		if (eccLevel >= 0 && eccLevel <= 8) {
+			// Keep legacy 0..8 behavior used by old writer: percent = level * 100 / 8.
+			s = "ecLevel=" + std::to_string(eccLevel * 100 / 8) + "%";
+		}
+	} else if (eccLevel <= 8) {
+		s = "ecLevel=" + std::to_string(eccLevel);
+	}
+
+	return s;
+}
+
 static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet encoding,
 	jstring format, jint width, jint height, jint margin, jint eccLevel)
 {
 	try {
+		auto barcodeFormat = BarcodeFormatFromString(J2CString(env, format));
 		std::string s;
-		if (eccLevel >= 0 && eccLevel <= 8) {
-			s = "ecLevel=" + std::to_string(eccLevel);
+		if (eccLevel >= 0) {
+			s = ResolveErrorLevel(barcodeFormat, eccLevel);
 		}
 		if (encoding != CharacterSet::Unknown &&
 			encoding != CharacterSet::UTF8)
@@ -557,8 +614,7 @@ static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet enco
 			s += "eci=" + ToString(encoding);
 		}
 
-		auto options = CreatorOptions(
-			BarcodeFormatFromString(J2CString(env, format)), s);
+		auto options = CreatorOptions(barcodeFormat, s);
 		auto barcode = encoding == CharacterSet::UTF8
 			? CreateBarcodeFromText(content, options)
 			: CreateBarcodeFromBytes(content, options);
