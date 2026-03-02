@@ -1,16 +1,14 @@
 plugins {
 	id 'com.android.library'
-	id 'kotlin-android'
 	id 'maven-publish'
 }
 
 android {
 	namespace 'de.markusfisch.android.zxingcpp'
 	compileSdk sdk_version
-	ndkVersion = '27.0.12077973'
 
 	defaultConfig {
-		minSdk 9
+		minSdk 21
 		targetSdk sdk_version
 
 		externalNativeBuild {
@@ -34,10 +32,10 @@ android {
 			path file('src/main/cpp/CMakeLists.txt')
 		}
 	}
-}
 
-dependencies {
-	implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+	publishing {
+		singleVariant('release')
+	}
 }
 
 afterEvaluate {
