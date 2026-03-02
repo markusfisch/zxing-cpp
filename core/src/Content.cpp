@@ -12,11 +12,9 @@
 #include "TextDecoder.h"
 #include "Utf.h"
 #include "ZXAlgorithms.h"
-
-#if !defined(ZXING_READERS) && !defined(ZXING_WRITERS)
 #include "Version.h"
-#endif
 
+#include <cassert>
 #include <cctype>
 
 namespace ZXing {
