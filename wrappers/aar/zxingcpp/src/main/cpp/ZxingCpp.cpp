@@ -568,18 +568,15 @@ static std::string ResolveErrorLevel(
 	} else if (barcodeFormat == BarcodeFormat::MicroQRCode) {
 		constexpr char MQR_LEVELS[] = {'L', 'M', 'Q'};
 		if (eccLevel >= 0 && eccLevel <= 8) {
-			// Micro QR supports L/M/Q only.
-			int index = eccLevel / 3;
-			if (index > 2) {
-				index = 2;
-			}
+			// Micro QR supports L/M/Q only; use same breakpoints as QR, fold H into Q.
+			int index = eccLevel <= 2 ? 0 : (eccLevel <= 4 ? 1 : 2);
 			s = "ecLevel=";
 			s.push_back(MQR_LEVELS[index]);
 		}
 	} else if (barcodeFormat == BarcodeFormat::RMQRCode) {
 		if (eccLevel >= 0 && eccLevel <= 8) {
-			// rMQR supports M/H only.
-			s = eccLevel <= 4 ? "ecLevel=M" : "ecLevel=H";
+			// rMQR supports M/H only; use same breakpoints as QR, fold L/M/Q into M.
+			s = eccLevel >= 7 ? "ecLevel=H" : "ecLevel=M";
 		}
 	} else if (barcodeFormat == BarcodeFormat::Aztec ||
 		barcodeFormat == BarcodeFormat::AztecCode ||
@@ -589,7 +586,7 @@ static std::string ResolveErrorLevel(
 			// Keep legacy 0..8 behavior used by old writer: percent = level * 100 / 8.
 			s = "ecLevel=" + std::to_string(eccLevel * 100 / 8) + "%";
 		}
-	} else if (eccLevel <= 8) {
+	} else if (eccLevel >= 0 && eccLevel <= 8) {
 		s = "ecLevel=" + std::to_string(eccLevel);
 	}
 
