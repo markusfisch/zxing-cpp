@@ -11,6 +11,7 @@ option (ZXING_EXAMPLES_QT "Build the Qt based example barcode reader/writer appl
 option (ZXING_BLACKBOX_TESTS "Build the black box reader/writer tests" OFF)
 option (ZXING_UNIT_TESTS "Build the unit tests (don't enable for production builds)" OFF)
 option (ZXING_TEST_DOTNET "Test if the .NET wrapper works" OFF)
+option (ZXING_TEST_GO "Test if the Go wrapper works" OFF)
 option (ZXING_TEST_INSTALL "Test if the installed/public API works" OFF)
 option (ZXING_PYTHON_MODULE "Build the python module" OFF)
 set    (ZXING_DEPENDENCIES "AUTO" CACHE STRING "Fetch from github or use locally installed (AUTO/GITHUB/LOCAL)")
@@ -77,6 +78,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 set(CMAKE_INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path/../lib>$<$<PLATFORM_ID:Linux>:$ORIGIN/../lib>")
 
 add_subdirectory (core)
+add_subdirectory (docs)
 
 enable_testing()
 
@@ -96,6 +98,9 @@ if (ZXING_UNIT_TESTS)
 endif()
 if (ZXING_TEST_DOTNET)
     add_subdirectory (wrappers/dotnet)
+endif()
+if (ZXING_TEST_GO)
+    add_subdirectory (wrappers/go)
 endif()
 if (ZXING_TEST_INSTALL)
     add_test(
