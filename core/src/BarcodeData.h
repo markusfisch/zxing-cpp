@@ -11,10 +11,12 @@
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "Error.h"
+#include "Quadrilateral.h"
 #include "ReaderOptions.h"
 #include "StructuredAppend.h"
 
 #include <memory>
+#include <mutex>
 #include <numbers>
 #include <string>
 #include <vector>
@@ -45,6 +47,7 @@ struct BarcodeData
 	BitMatrix symbol = {};
 #ifdef ZXING_USE_ZINT
 	unique_zint_symbol zint = {};
+	mutable std::unique_ptr<std::mutex> zintMutex = std::make_unique<std::mutex>();
 #endif
 	int dataMask = -1;
 	int lineCount = 0;
