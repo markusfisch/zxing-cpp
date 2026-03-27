@@ -20,6 +20,7 @@
 #include "GTIN.h"
 #include "ReadBarcode.h"
 #include "Utf.h"
+#include "WriteBarcode.h"
 
 #include <android/bitmap.h>
 #include <chrono>
@@ -593,38 +594,95 @@ static std::string ResolveErrorLevel(
 	return s;
 }
 
-static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet encoding,
-	jstring format, jint width, jint height, jint margin, jint eccLevel)
+static Barcode CreateWriterBarcode(
+	JNIEnv* env,
+	const std::string& content,
+	CharacterSet encoding,
+	jstring format,
+	jint eccLevel)
+{
+	auto barcodeFormat = BarcodeFormatFromString(J2CString(env, format));
+	std::string s;
+	if (eccLevel >= 0) {
+		s = ResolveErrorLevel(barcodeFormat, eccLevel);
+	}
+	if (encoding != CharacterSet::Unknown &&
+		encoding != CharacterSet::UTF8)
+	{
+		if (!s.empty()) {
+			s += ",";
+		}
+		s += "eci=" + ToString(encoding);
+	}
+
+	auto options = CreatorOptions(barcodeFormat, s);
+	return encoding == CharacterSet::UTF8
+		? CreateBarcodeFromText(content, options)
+		: CreateBarcodeFromBytes(content, options);
+}
+
+static Matrix<uint8_t> ScaleImageToMatrix(
+	const ImageView& image,
+	jint width,
+	jint height)
+{
+	int scale = 1;
+	if (width > 0 && height > 0 &&
+		width >= image.width() &&
+		height >= image.height())
+	{
+		scale = std::min(width / image.width(), height / image.height());
+	}
+
+	Matrix<uint8_t> matrix(
+		image.width() * scale,
+		image.height() * scale,
+		0xff);
+	for (int y = 0; y < image.height(); ++y) {
+		for (int x = 0; x < image.width(); ++x) {
+			const uint8_t value = *image.data(x, y);
+			for (int sy = 0; sy < scale; ++sy) {
+				for (int sx = 0; sx < scale; ++sx) {
+					matrix.set(
+						x * scale + sx,
+						y * scale + sy,
+						value);
+				}
+			}
+		}
+	}
+	return matrix;
+}
+
+static jobject Encode(
+	JNIEnv* env,
+	const std::string& content,
+	CharacterSet encoding,
+	jstring format,
+	jint width,
+	jint height,
+	jboolean addQuietZones,
+	jint eccLevel)
 {
 	try {
-		auto barcodeFormat = BarcodeFormatFromString(J2CString(env, format));
-		std::string s;
-		if (eccLevel >= 0) {
-			s = ResolveErrorLevel(barcodeFormat, eccLevel);
-		}
-		if (encoding != CharacterSet::Unknown &&
-			encoding != CharacterSet::UTF8)
-		{
-			if (!s.empty()) {
-				s += ",";
-			}
-			s += "eci=" + ToString(encoding);
-		}
-
-		auto options = CreatorOptions(barcodeFormat, s);
-		auto barcode = encoding == CharacterSet::UTF8
-			? CreateBarcodeFromText(content, options)
-			: CreateBarcodeFromBytes(content, options);
+		auto barcode = CreateWriterBarcode(
+			env,
+			content,
+			encoding,
+			format,
+			eccLevel);
 
 		if (!barcode.isValid()) {
 			ThrowJavaException(env, barcode.error().msg().c_str());
 			return nullptr;
 		}
 
-		auto bm = barcode.symbolBitMatrix().copy();
-		bm.flipAll();
-		auto inflated = Inflate(std::move(bm), width, height, margin);
-		return CreateBitMatrix(env, ToMatrix<uint8_t>(inflated));
+		auto image = WriteBarcodeToImage(
+			barcode,
+			WriterOptions().addQuietZones(addQuietZones));
+		return CreateBitMatrix(
+			env,
+			ScaleImageToMatrix(image, width, height));
 	} catch (const std::exception& e) {
 		ThrowJavaException(env, e.what());
 		return nullptr;
@@ -634,16 +692,16 @@ static jobject Encode(JNIEnv* env, const std::string& content, CharacterSet enco
 extern "C" JNIEXPORT jobject JNICALL
 Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeString(
 	JNIEnv* env, jobject, jstring text, jstring format,
-	jint width, jint height, jint margin, jint eccLevel)
+	jint width, jint height, jboolean addQuietZones, jint eccLevel)
 {
 	return Encode(env, J2CString(env, text), CharacterSet::UTF8,
-		format, width, height, margin, eccLevel);
+		format, width, height, addQuietZones, eccLevel);
 }
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeByteArray(
 	JNIEnv* env, jobject, jbyteArray data, jstring format,
-	jint width, jint height, jint margin, jint eccLevel)
+	jint width, jint height, jboolean addQuietZones, jint eccLevel)
 {
 	auto bytes = env->GetByteArrayElements(data, nullptr);
 	auto bitmap = Encode(env,
@@ -651,7 +709,72 @@ Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeByteArray(
 			reinterpret_cast<const char*>(bytes),
 			env->GetArrayLength(data)),
 		CharacterSet::BINARY,
-		format, width, height, margin, eccLevel);
+		format, width, height, addQuietZones, eccLevel);
 	env->ReleaseByteArrayElements(data, bytes, 0);
 	return bitmap;
+}
+
+static jstring EncodeAsSvg(
+	JNIEnv* env,
+	const std::string& content,
+	CharacterSet encoding,
+	jstring format,
+	jboolean addQuietZones,
+	jint eccLevel)
+{
+	try {
+		auto barcode = CreateWriterBarcode(
+			env,
+			content,
+			encoding,
+			format,
+			eccLevel);
+
+		if (!barcode.isValid()) {
+			ThrowJavaException(env, barcode.error().msg().c_str());
+			return nullptr;
+		}
+
+		return C2JString(
+			env,
+			WriteBarcodeToSVG(
+				barcode,
+				WriterOptions().addQuietZones(addQuietZones)));
+	} catch (const std::exception& e) {
+		ThrowJavaException(env, e.what());
+		return nullptr;
+	}
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeStringAsSvg(
+	JNIEnv* env, jobject, jstring text, jstring format,
+	jboolean addQuietZones, jint eccLevel)
+{
+	return EncodeAsSvg(
+		env,
+		J2CString(env, text),
+		CharacterSet::UTF8,
+		format,
+		addQuietZones,
+		eccLevel);
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_de_markusfisch_android_zxingcpp_ZxingCpp_encodeByteArrayAsSvg(
+	JNIEnv* env, jobject, jbyteArray data, jstring format,
+	jboolean addQuietZones, jint eccLevel)
+{
+	auto bytes = env->GetByteArrayElements(data, nullptr);
+	auto svg = EncodeAsSvg(
+		env,
+		std::string(
+			reinterpret_cast<const char*>(bytes),
+			env->GetArrayLength(data)),
+		CharacterSet::BINARY,
+		format,
+		addQuietZones,
+		eccLevel);
+	env->ReleaseByteArrayElements(data, bytes, 0);
+	return svg;
 }

@@ -283,52 +283,66 @@ xmlns="http://www.w3.org/2000/svg">
 		format: BarcodeFormat,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = 1,
+		addQuietZones: Boolean = true,
 		ecLevel: Int = -1,
 		setColor: Int = 0xff000000.toInt(),
 		unsetColor: Int = 0xffffffff.toInt()
 	): Bitmap = content.encode(
 		format.toString(),
 		width, height,
-		margin, ecLevel
+		addQuietZones, ecLevel
 	).toBitmap(setColor, unsetColor)
 
 	fun <T> encodeAsSvg(
 		content: T,
 		format: BarcodeFormat,
-		margin: Int = 1,
+		addQuietZones: Boolean = true,
 		ecLevel: Int = -1
-	): String = content.encode(
-		format.toString(),
-		0, 0,
-		margin, ecLevel
-	).toSvg()
+	): String = when (content) {
+		is String -> encodeStringAsSvg(
+			content,
+			format.toString(),
+			addQuietZones,
+			ecLevel
+		)
+
+		is ByteArray -> encodeByteArrayAsSvg(
+			content,
+			format.toString(),
+			addQuietZones,
+			ecLevel
+		)
+
+		else -> throw IllegalArgumentException(
+			"encodeAsSvg() is not implemented for this type"
+		)
+	}
 
 	fun <T> encodeAsText(
 		content: T,
 		format: BarcodeFormat,
-		margin: Int = 1,
+		addQuietZones: Boolean = true,
 		ecLevel: Int = -1,
 		inverted: Boolean = false
 	): String = content.encode(
 		format.toString(),
 		0, 0,
-		margin, ecLevel
+		addQuietZones, ecLevel
 	).toText(inverted)
 
 	fun <T> T.encode(
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = 1,
+		addQuietZones: Boolean = true,
 		ecLevel: Int = -1
 	): BitMatrix = when (this) {
 		is String -> encodeString(
-			this, format, width, height, margin, ecLevel
+			this, format, width, height, addQuietZones, ecLevel
 		)
 
 		is ByteArray -> encodeByteArray(
-			this, format, width, height, margin, ecLevel
+			this, format, width, height, addQuietZones, ecLevel
 		)
 
 		else -> throw IllegalArgumentException(
@@ -341,7 +355,7 @@ xmlns="http://www.w3.org/2000/svg">
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = 1,
+		addQuietZones: Boolean = true,
 		ecLevel: Int = -1
 	): BitMatrix
 
@@ -350,9 +364,23 @@ xmlns="http://www.w3.org/2000/svg">
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
-		margin: Int = 1,
+		addQuietZones: Boolean = true,
 		ecLevel: Int = -1
 	): BitMatrix
+
+	private external fun encodeStringAsSvg(
+		text: String,
+		format: String,
+		addQuietZones: Boolean = true,
+		ecLevel: Int = -1
+	): String
+
+	private external fun encodeByteArrayAsSvg(
+		bytes: ByteArray,
+		format: String,
+		addQuietZones: Boolean = true,
+		ecLevel: Int = -1
+	): String
 
 	init {
 		System.loadLibrary("zxingcpp_android")
