@@ -677,12 +677,26 @@ static jobject Encode(
 			return nullptr;
 		}
 
-		auto image = WriteBarcodeToImage(
-			barcode,
-			WriterOptions().addQuietZones(addQuietZones));
-		return CreateBitMatrix(
-			env,
-			ScaleImageToMatrix(image, width, height));
+		// Use zint for linear barcodes but avoid it for all other
+		// types because zint doesn't generate reasonable margins for
+		// other barcodes.
+		if (barcode.format() & BarcodeFormat::AllLinear) {
+			auto image = WriteBarcodeToImage(
+				barcode,
+				WriterOptions().addQuietZones(addQuietZones));
+			return CreateBitMatrix(
+				env,
+				ScaleImageToMatrix(image, width, height));
+		}
+
+		auto bm = barcode.symbolBitMatrix().copy();
+		bm.flipAll();
+		auto inflated = Inflate(
+			std::move(bm),
+			width,
+			height,
+			addQuietZones ? 1 : 0);
+		return CreateBitMatrix(env, ToMatrix<uint8_t>(inflated));
 	} catch (const std::exception& e) {
 		ThrowJavaException(env, e.what());
 		return nullptr;
