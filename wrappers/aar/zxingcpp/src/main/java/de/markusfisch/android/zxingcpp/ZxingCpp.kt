@@ -298,25 +298,11 @@ xmlns="http://www.w3.org/2000/svg">
 		format: BarcodeFormat,
 		addQuietZones: Boolean = true,
 		ecLevel: Int = -1
-	): String = when (content) {
-		is String -> encodeStringAsSvg(
-			content,
-			format.toString(),
-			addQuietZones,
-			ecLevel
-		)
-
-		is ByteArray -> encodeByteArrayAsSvg(
-			content,
-			format.toString(),
-			addQuietZones,
-			ecLevel
-		)
-
-		else -> throw IllegalArgumentException(
-			"encodeAsSvg() is not implemented for this type"
-		)
-	}
+	): String = content.encode(
+		format.toString(),
+		0, 0,
+		addQuietZones, ecLevel
+	).toSvg()
 
 	fun <T> encodeAsText(
 		content: T,
