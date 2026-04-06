@@ -58,6 +58,7 @@ static const char* JavaBarcodeFormatName(BarcodeFormat format)
 	case BarcodeFormat::Aztec: return "Aztec";
 	case BarcodeFormat::Codabar: return "Codabar";
 	case BarcodeFormat::Code39: return "Code39";
+	case BarcodeFormat::Code39Std: return "Code39Std";
 	case BarcodeFormat::Code39Ext: return "Code39Ext";
 	case BarcodeFormat::Code32: return "Code32";
 	case BarcodeFormat::PZN: return "PZN";

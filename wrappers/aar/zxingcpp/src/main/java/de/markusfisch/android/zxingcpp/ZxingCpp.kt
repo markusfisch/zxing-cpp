@@ -44,6 +44,7 @@ object ZxingCpp {
 		Aztec,
 		Codabar,
 		Code39,
+		Code39Std,
 		Code39Ext,
 		Code32,
 		PZN,
