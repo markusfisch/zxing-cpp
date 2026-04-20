@@ -27,8 +27,8 @@
 			android:layout_height="wrap_content"
 			android:layout_marginTop="@dimen/margin_large"
 			android:layout_centerHorizontal="true"
-			android:textColor="#ffffffff"
-			android:background="#65000000" />
+			android:textColor="@color/hud_foreground"
+			android:background="@color/hud_background" />
 
 		<TextView
 			android:id="@+id/text_fps"
@@ -37,7 +37,8 @@
 			android:layout_marginTop="@dimen/margin_xsmall"
 			android:layout_marginEnd="@dimen/margin_xsmall"
 			android:layout_alignParentEnd="true"
-			android:background="#65000000" />
+			android:textColor="@color/hud_foreground"
+			android:background="@color/hud_background" />
 
 		<com.google.android.material.chip.ChipGroup
 			android:layout_width="120dp"

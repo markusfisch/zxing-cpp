@@ -1,0 +1,4 @@
+<resources>
+	<color name="hud_background">#65000000</color>
+	<color name="hud_foreground">#ffff</color>
+</resources>
