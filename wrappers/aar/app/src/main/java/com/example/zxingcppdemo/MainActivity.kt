@@ -326,6 +326,11 @@ class MainActivity : AppCompatActivity() {
 	private fun hasPermissions(context: Context) = permissions.all {
 		ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
 	}
+
+	override fun onDestroy() {
+		super.onDestroy()
+		executor.shutdown()
+	}
 }
 
 class ImageSize {
