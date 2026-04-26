@@ -27,11 +27,11 @@ import android.os.Bundle
 import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.zxing.*
@@ -61,6 +61,14 @@ class MainActivity : AppCompatActivity() {
 	private lateinit var chipPause: CheckBox
 
 	private var lastText = ""
+	private val requestPermissionsLauncher =
+		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+			if (permissions.all { it.value }) {
+				bindCameraUseCases()
+			} else {
+				finish()
+			}
+		}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -293,36 +301,14 @@ class MainActivity : AppCompatActivity() {
 		// Request permissions each time the app resumes, since they can
 		// be revoked at any time.
 		if (!hasPermissions(this)) {
-			ActivityCompat.requestPermissions(
-				this,
-				permissions.toTypedArray(),
-				PERMISSION_REQUEST_CODE
-			)
+			requestPermissionsLauncher.launch(permissions.toTypedArray())
 		} else {
 			bindCameraUseCases()
-		}
-	}
-
-	override fun onRequestPermissionsResult(
-		requestCode: Int,
-		permissions: Array<out String>,
-		grantResults: IntArray,
-	) {
-		super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-		if (requestCode == PERMISSION_REQUEST_CODE && hasPermissions(this)) {
-			bindCameraUseCases()
-		} else {
-			// If we don't have the required permissions, we can't run.
-			finish()
 		}
 	}
 
 	private fun hasPermissions(context: Context) = permissions.all {
 		ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-	}
-
-	companion object {
-		private const val PERMISSION_REQUEST_CODE = 1
 	}
 }
 
