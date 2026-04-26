@@ -24,12 +24,16 @@ import android.graphics.Rect
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Bundle
+import android.util.Size
 import android.view.View
 import android.widget.CheckBox
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
@@ -92,14 +96,26 @@ class MainActivity : AppCompatActivity() {
 		val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 		cameraProviderFuture.addListener({
 			// Set up the view finder use case to display camera preview.
+			val previewResolutionSelector = ResolutionSelector.Builder()
+				.setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+				.build()
 			val preview = Preview.Builder()
-				.setTargetAspectRatio(AspectRatio.RATIO_16_9)
+				.setResolutionSelector(previewResolutionSelector)
 				.build()
 
 			// Set up the image analysis use case which will process frames
 			// in real time.
+			val analysisResolutionSelector = ResolutionSelector.Builder()
+				.setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+				.setResolutionStrategy(
+					ResolutionStrategy(
+						Size(1280, 720),
+						ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+					)
+				)
+				.build()
 			val imageAnalysis = ImageAnalysis.Builder()
-				.setTargetAspectRatio(AspectRatio.RATIO_16_9)
+				.setResolutionSelector(analysisResolutionSelector)
 				.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
 				.build()
 
