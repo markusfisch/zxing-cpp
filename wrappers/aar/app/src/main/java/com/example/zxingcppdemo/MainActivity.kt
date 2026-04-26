@@ -142,6 +142,7 @@ class MainActivity : AppCompatActivity() {
 					imageSize.upright.x, imageSize.upright.y
 				)
 				cropRect.update(image.width, image.height)
+				image.setCropRect(cropRect)
 
 				val useJava = chipJava.isChecked
 				overlayView.updateTransformationMatrix(
