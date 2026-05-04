@@ -25,6 +25,8 @@
 #include <android/bitmap.h>
 #include <chrono>
 #include <exception>
+#include <map>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 
@@ -49,110 +51,6 @@ static std::string J2CString(JNIEnv* env, jstring str)
 	env->GetStringUTFRegion(str, 0, len, res.data());
 
 	return res;
-}
-
-static const char* JavaBarcodeFormatName(BarcodeFormat format)
-{
-	switch (format) {
-	case BarcodeFormat::None: return "None";
-	case BarcodeFormat::Aztec: return "Aztec";
-	case BarcodeFormat::Codabar: return "Codabar";
-	case BarcodeFormat::Code39: return "Code39";
-	case BarcodeFormat::Code39Std: return "Code39Std";
-	case BarcodeFormat::Code39Ext: return "Code39Ext";
-	case BarcodeFormat::Code32: return "Code32";
-	case BarcodeFormat::PZN: return "PZN";
-	case BarcodeFormat::Code93: return "Code93";
-	case BarcodeFormat::Code128: return "Code128";
-	case BarcodeFormat::DataMatrix: return "DataMatrix";
-	case BarcodeFormat::EAN8: return "EAN8";
-	case BarcodeFormat::EAN13: return "EAN13";
-	case BarcodeFormat::ITF: return "ITF";
-	case BarcodeFormat::MaxiCode: return "MaxiCode";
-	case BarcodeFormat::PDF417: return "PDF417";
-	case BarcodeFormat::QRCode: return "QRCode";
-	case BarcodeFormat::MicroQRCode: return "MicroQRCode";
-	case BarcodeFormat::RMQRCode: return "RMQRCode";
-	case BarcodeFormat::DataBar: return "DataBar";
-	case BarcodeFormat::DataBarOmni: return "DataBarOmni";
-	case BarcodeFormat::DataBarStk: return "DataBarStk";
-	case BarcodeFormat::DataBarLtd: return "DataBarLtd";
-	case BarcodeFormat::DataBarExp: return "DataBarExp";
-	case BarcodeFormat::DataBarExpStk: return "DataBarExpStk";
-	case BarcodeFormat::DXFilmEdge: return "DXFilmEdge";
-	case BarcodeFormat::UPCA: return "UPCA";
-	case BarcodeFormat::UPCE: return "UPCE";
-	default: throw std::invalid_argument("Invalid format");
-	}
-}
-
-static const char* JavaContentTypeName(ContentType contentType)
-{
-	switch (contentType) {
-	case ContentType::Text: return "TEXT";
-	case ContentType::Binary: return "BINARY";
-	case ContentType::Mixed: return "MIXED";
-	case ContentType::GS1: return "GS1";
-	case ContentType::ISO15434: return "ISO15434";
-	case ContentType::UnknownECI: return "UNKNOWN_ECI";
-	default: throw std::invalid_argument("Invalid contentType");
-	}
-}
-
-static const char* JavaErrorTypeName(Error::Type errorType)
-{
-	// These have to be the names of the enum constants in the kotlin code.
-	switch (errorType) {
-	case Error::Type::Format: return "FORMAT";
-	case Error::Type::Checksum: return "CHECKSUM";
-	case Error::Type::Unsupported: return "UNSUPPORTED";
-	default: throw std::invalid_argument("Invalid errorType");
-	}
-}
-
-static EanAddOnSymbol EanAddOnSymbolFromString(const std::string& name)
-{
-	if (name == "IGNORE") {
-		return EanAddOnSymbol::Ignore;
-	} else if (name == "READ") {
-		return EanAddOnSymbol::Read;
-	} else if (name == "REQUIRE") {
-		return EanAddOnSymbol::Require;
-	} else {
-		throw std::invalid_argument("Invalid eanAddOnSymbol name");
-	}
-}
-
-static Binarizer BinarizerFromString(const std::string& name)
-{
-	if (name == "LOCAL_AVERAGE") {
-		return Binarizer::LocalAverage;
-	} else if (name == "GLOBAL_HISTOGRAM") {
-		return Binarizer::GlobalHistogram;
-	} else if (name == "FIXED_THRESHOLD") {
-		return Binarizer::FixedThreshold;
-	} else if (name == "BOOL_CAST") {
-		return Binarizer::BoolCast;
-	} else {
-		throw std::invalid_argument("Invalid binarizer name");
-	}
-}
-
-static TextMode TextModeFromString(const std::string& name)
-{
-	if (name == "PLAIN") {
-		return TextMode::Plain;
-	} else if (name == "ECI") {
-		return TextMode::ECI;
-	} else if (name == "HRI") {
-		return TextMode::HRI;
-	} else if (name == "HEX") {
-		return TextMode::Hex;
-	} else if (name == "ESCAPED") {
-		return TextMode::Escaped;
-	} else {
-		throw std::invalid_argument("Invalid textMode name");
-	}
 }
 
 static jobject ThrowJavaException(JNIEnv* env, const char* message)
@@ -268,18 +166,33 @@ static jobject CreatePosition(JNIEnv* env, const Position& position)
 		position.orientation());
 }
 
-static jobject CreateEnum(JNIEnv* env, const char* enumClass,
-	const char* value)
+static jobject CreateBarcodeFormat(JNIEnv* env, BarcodeFormat format)
 {
-	jclass cls = env->FindClass(enumClass);
-	jfieldID fidCT = env->GetStaticFieldID(cls, value,
-		("L" + std::string(enumClass) + ";").c_str());
-	return env->GetStaticObjectField(cls, fidCT);
+	static std::map<BarcodeFormat, jobject> cache;
+	static std::mutex mutex;
+	std::scoped_lock<std::mutex> lock(mutex);
+	if (cache.empty()) {
+		jclass cls = env->FindClass(PACKAGE "BarcodeFormat");
+		jmethodID values = env->GetStaticMethodID(cls, "values", "()[L" PACKAGE "BarcodeFormat;");
+		auto enumValues = static_cast<jobjectArray>(env->CallStaticObjectMethod(cls, values));
+		jmethodID getValue = env->GetMethodID(cls, "getValue", "()I");
+		for (int i = 0, size = env->GetArrayLength(enumValues); i < size; ++i) {
+			jobject obj = env->GetObjectArrayElement(enumValues, i);
+			cache[BarcodeFormat(env->CallIntMethod(obj, getValue))] = env->NewGlobalRef(obj);
+		}
+	}
+	if (cache.count(format) == 0) {
+		throw std::invalid_argument("Invalid format");
+	}
+	return cache[format];
 }
 
-static jobject CreateErrorType(JNIEnv* env, Error::Type errorType)
+static jobject CreateEnum(JNIEnv* env, const char* enumClass, int value)
 {
-	return CreateEnum(env, PACKAGE "ErrorType", JavaErrorTypeName(errorType));
+	jclass cls = env->FindClass(enumClass);
+	jmethodID values = env->GetStaticMethodID(cls, "values", ("()[L" + std::string(enumClass) + ";").c_str());
+	auto enumValues = static_cast<jobjectArray>(env->CallStaticObjectMethod(cls, values));
+	return env->GetObjectArrayElement(enumValues, value);
 }
 
 static jobject CreateError(JNIEnv* env, const Error& error)
@@ -291,20 +204,13 @@ static jobject CreateError(JNIEnv* env, const Error& error)
 		"Ljava/lang/String;)V");
 	return env->NewObject(
 		cls, constructor,
-		CreateErrorType(env, error.type()),
+		CreateEnum(env, PACKAGE "ErrorType", static_cast<int>(error.type())),
 		C2JString(env, error.msg()));
 }
 
 static jobject CreateContentType(JNIEnv* env, ContentType contentType)
 {
-	return CreateEnum(env, PACKAGE "ContentType",
-		JavaContentTypeName(contentType));
-}
-
-static jobject CreateBarcodeFormat(JNIEnv* env, BarcodeFormat format)
-{
-	return CreateEnum(env, PACKAGE "BarcodeFormat",
-		JavaBarcodeFormatName(format));
+	return CreateEnum(env, PACKAGE "ContentType", static_cast<int>(contentType));
 }
 
 static jobject CreateResult(JNIEnv* env, const Barcode& result)
@@ -388,15 +294,9 @@ static int GetIntField(JNIEnv* env, jclass cls, jobject hints,
 	return env->GetIntField(hints, env->GetFieldID(cls, name, "I"));
 }
 
-static std::string GetEnumField(JNIEnv* env, jclass hintClass, jobject hints,
-	const char* enumClass, const char* name)
+static int GetEnumOrdinal(JNIEnv* env, jobject obj)
 {
-	jclass cls = env->FindClass(enumClass);
-	jstring s = (jstring) env->CallObjectMethod(
-		env->GetObjectField(hints, env->GetFieldID(hintClass, name,
-			("L" + std::string(enumClass) + ";").c_str())),
-		env->GetMethodID(cls, "name", "()Ljava/lang/String;"));
-	return J2CString(env, s);
+	return env->CallIntMethod(obj, env->GetMethodID(env->GetObjectClass(obj), "ordinal", "()I"));
 }
 
 static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
@@ -412,15 +312,13 @@ static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 	if (!formatArray) {
 		return {};
 	}
-	auto name = env->GetMethodID(
+	auto getValue = env->GetMethodID(
 		env->FindClass(PACKAGE "BarcodeFormat"),
-		"name", "()Ljava/lang/String;");
+		"getValue", "()I");
 	std::vector<BarcodeFormat> formatVec;
 	for (int i = 0, size = env->GetArrayLength(formatArray); i < size; ++i) {
-		auto s = (jstring) env->CallObjectMethod(
-			env->GetObjectArrayElement(formatArray, i),
-			name);
-		formatVec.push_back(BarcodeFormatFromString(J2CString(env, s)));
+		auto format = env->GetObjectArrayElement(formatArray, i);
+		formatVec.push_back(BarcodeFormat(env->CallIntMethod(format, getValue)));
 	}
 	return BarcodeFormats(std::move(formatVec));
 }
@@ -435,8 +333,8 @@ static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
 		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
 		.setTryDownscale(GetBooleanField(env, cls, hints, "tryDownscale"))
 		.setIsPure(GetBooleanField(env, cls, hints, "isPure"))
-		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints,
-			PACKAGE "Binarizer", "binarizer")))
+		.setBinarizer(static_cast<Binarizer>(GetEnumOrdinal(env,
+			env->GetObjectField(hints, env->GetFieldID(cls, "binarizer", "L" PACKAGE "Binarizer;")))))
 		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
 		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"))
 		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
@@ -445,10 +343,10 @@ static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
 		.setValidateCode39CheckSum(GetBooleanField(env, cls, hints, "validateCode39CheckSum"))
 		.setValidateITFCheckSum(GetBooleanField(env, cls, hints, "validateITFCheckSum"))
 		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
-		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints,
-			PACKAGE "EanAddOnSymbol", "eanAddOnSymbol")))
-		.setTextMode(TextModeFromString(GetEnumField(env, cls, hints,
-			PACKAGE "TextMode", "textMode")));
+		.setEanAddOnSymbol(static_cast<EanAddOnSymbol>(GetEnumOrdinal(env,
+			env->GetObjectField(hints, env->GetFieldID(cls, "eanAddOnSymbol", "L" PACKAGE "EanAddOnSymbol;")))))
+		.setTextMode(static_cast<TextMode>(GetEnumOrdinal(env,
+			env->GetObjectField(hints, env->GetFieldID(cls, "textMode", "L" PACKAGE "TextMode;")))));
 }
 
 extern "C" JNIEXPORT jobject JNICALL
