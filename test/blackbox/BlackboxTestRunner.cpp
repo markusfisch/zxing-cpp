@@ -216,8 +216,7 @@ static std::vector<fs::path> getImagesInDirectory(const fs::path& directory)
 {
 	std::vector<fs::path> result;
 	for (const auto& entry : fs::directory_iterator(directory))
-		if (fs::is_regular_file(entry.status()) &&
-				Contains({".png", ".jpg", ".pgm", ".gif"}, entry.path().extension()))
+		if (fs::is_regular_file(entry.status()) && Contains({".webp", ".png", ".jpg", ".pgm", ".gif"}, entry.path().extension()))
 			result.push_back(entry.path());
 
 	preloadImageCache(result);
@@ -374,19 +373,19 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		// Expected failures:
 		// abc-inverted.png (fast) - fast does not try inverted
 		// az-thick.png (pure)
-		runTests("aztec-1", Aztec, 31, {
-			{ 30, 31, 0   },
-			{ 30, 31, 90  },
-			{ 30, 31, 180 },
-			{ 30, 31, 270 },
-			{ 29, 0, pure },
+		runTests("aztec-1", Aztec, 32, {
+			{ 31, 32, 0   },
+			{ 31, 32, 90  },
+			{ 31, 32, 180 },
+			{ 31, 32, 270 },
+			{ 30, 0, pure },
 		});
 
-		runTests("aztec-2", Aztec, 23, {
-			{ 23, 23, 0   },
-			{ 23, 23, 90  },
-			{ 23, 23, 180 },
-			{ 23, 23, 270 },
+		runTests("aztec-2", Aztec, 16, {
+			{ 16, 16, 0   },
+			{ 16, 16, 90  },
+			{ 16, 16, 180 },
+			{ 16, 16, 270 },
 		});
 
 		runTests("datamatrix-1", DataMatrix, 30, {
@@ -430,8 +429,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("codabar-2", Codabar, 4, {
-			{ 2, 3, 0   },
-			{ 2, 3, 180 },
+			{ 3, 4, 0   },
+			{ 3, 4, 180 },
 		});
 
 		runTests("code39-1", Code39, 6, {
@@ -444,9 +443,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 3, 180 },
 		});
 
-		runTests("code39-3", Code39, 12, {
-			{ 12, 12, 0   },
-			{ 12, 12, 180 },
+		runTests("code39-3", Code39, 5, {
+			{ 5, 5, 0   },
+			{ 5, 5, 180 },
 		});
 
 		runTests("code93-1", Code93, 3, {
@@ -459,9 +458,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 6, 6, 180 },
 		});
 
-		runTests("code128-2", Code128, 22, {
-			{ 19, 22, 0   },
-			{ 20, 22, 180 },
+		runTests("code128-2", Code128, 14, {
+			{ 13, 14, 0   },
+			{ 13, 14, 180 },
 		});
 
 		runTests("code128-3", Code128, 2, {
@@ -475,29 +474,29 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 8, 0, pure },
 		});
 
-		runTests("ean13-1", EAN13, 32, {
-			{ 26, 30, 0   },
-			{ 25, 30, 180 },
+		runTests("ean13-1", EAN13, 16, {
+			{ 10, 14, 0   },
+			{ 11, 14, 180 },
 		});
 
-		runTests("ean13-2", EAN13, 24, {
-			{ 7, 13, 0   },
-			{ 7, 13, 180 },
+		runTests("ean13-2", EAN13, 16, {
+			{ 1, 6, 0   },
+			{ 1, 6, 180 },
 		});
 
-		runTests("ean13-3", EAN13, 21, {
-			{ 20, 21, 0   },
-			{ 21, 21, 180 },
+		runTests("ean13-3", EAN13, 8, {
+			{ 8, 8, 0   },
+			{ 8, 8, 180 },
 		});
 
-		runTests("ean13-4", EAN13, 22, {
-			{ 6, 13, 0   },
-			{ 7, 13, 180 },
+		runTests("ean13-4", EAN13, 20, {
+			{ 8, 12, 0   },
+			{ 7, 12, 180 },
 		});
 
 		runTests("ean13-extension-1", EAN13, 5, {
-			{ 3, 5, 0 },
-			{ 3, 5, 180 },
+			{ 4, 5, 0 },
+			{ 4, 5, 180 },
 		}, ReaderOptions().eanAddOnSymbol(EanAddOnSymbol::Require));
 
 		runTests("itf-1", ITF, 14, {
@@ -515,34 +514,34 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 4, 4, 180 },
 		});
 
-		runTests("upca-1", UPCA, 12, {
-			{ 10, 12, 0   },
-			{ 11, 12, 180 },
+		runTests("upca-1", UPCA, 5, {
+			{ 4, 5, 0   },
+			{ 4, 5, 180 },
 		}, ReaderOptions().formats(UPCA));
 
-		runTests("upca-2", UPCA, 36, {
-			{ 17, 22, 0   },
-			{ 17, 22, 180 },
+		runTests("upca-2", UPCA, 26, {
+			{ 10, 16, 0   },
+			{ 12, 16, 180 },
 		}, ReaderOptions().formats(UPCA));
 
-		runTests("upca-3", UPCA, 21, {
-			{ 7, 11, 0   },
-			{ 8, 11, 180 },
+		runTests("upca-3", UPCA, 6, {
+			{ 3, 6, 0   },
+			{ 3, 6, 180 },
 		}, ReaderOptions().formats(UPCA));
 
-		runTests("upca-4", UPCA, 19, {
-			{ 8, 12, 0, 1, 0 },
-			{ 9, 12, 0, 1, 180 },
+		runTests("upca-4", UPCA, 13, {
+			{ 5, 9, 0 },
+			{ 6, 9, 180 },
 		}, ReaderOptions().formats(UPCA));
 
-		runTests("upca-5", UPCA, 32, {
-			{ 18, 20, 0   },
-			{ 18, 20, 180 },
+		runTests("upca-5", UPCA, 20, {
+			{ 7, 9, 0   },
+			{ 7, 9, 180 },
 		}, ReaderOptions().formats(UPCA));
 
 		runTests("upca-extension-1", UPCA, 6, {
-			{ 4, 4, 0 },
-			{ 3, 4, 180 },
+			{ 4, 5, 0 },
+			{ 4, 5, 180 },
 		}, ReaderOptions().eanAddOnSymbol(EanAddOnSymbol::Require).formats(UPCA));
 
 		runTests("upce-1", UPCE, 3, {
@@ -551,19 +550,19 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 0, pure },
 		});
 
-		runTests("upce-2", UPCE, 28, {
-			{ 18, 22, 0, 1, 0   },
-			{ 19, 22, 1, 1, 180 },
+		runTests("upce-2", UPCE, 15, {
+			{ 9, 10, 0   },
+			{ 9, 10, 180 },
 		});
 
 		runTests("upce-3", UPCE, 11, {
 			{ 5, 7, 0   },
-			{ 6, 7, 180 },
+			{ 5, 7, 180 },
 		});
 
 		runTests("rss14-1", DataBarOmni, 13, {
 			{ 11, 11, 0   },
-			{ 10, 11, 180 },
+			{ 11, 11, 180 },
 		});
 
 		runTests("rss14-2", DataBarStk, 7, {
@@ -577,9 +576,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 37, 0, pure },
 		});
 
-		runTests("rssexpanded-2", DataBarExp, 15, {
-			{ 13, 15, 0   },
-			{ 13, 15, 180 },
+		runTests("rssexpanded-2", DataBarExp, 7, {
+			{ 5, 7, 0   },
+			{ 5, 7, 180 },
 		});
 
 		runTests("rssexpanded-3", DataBarExp, 118, {
@@ -602,7 +601,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		runTests("databarltd-1", DataBarLtd, 2, {
 			{ 2, 2, 0   },
 			{ 2, 2, 180 },
-			{ 2, 0, pure },
+			{ 1, 0, pure },
 		});
 
 		runTests("maxicode-1", MaxiCode, 9, {
@@ -613,33 +612,33 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 0, 0, 0 },
 		});
 
-		runTests("qrcode-1", QRCode, 16, {
-			{ 16, 16, 0   },
-			{ 16, 16, 90  },
-			{ 16, 16, 180 },
-			{ 16, 16, 270 },
+		runTests("qrcode-1", QRCode, 8, {
+			{ 8, 8, 0   },
+			{ 8, 8, 90  },
+			{ 8, 8, 180 },
+			{ 8, 8, 270 },
 		});
 
 		runTests("qrcode-2", QRCode, 54, {
 			{ 48, 51, 0   },
-			{ 48, 51, 90  },
+			{ 49, 52, 90  },
 			{ 48, 51, 180 },
 			{ 48, 51, 270 },
 			{ 23, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});
 
-		runTests("qrcode-3", QRCode, 28, {
-			{ 28, 28, 0   },
-			{ 28, 28, 90  },
-			{ 28, 28, 180 },
-			{ 28, 28, 270 },
+		runTests("qrcode-3", QRCode, 18, {
+			{ 18, 18, 0   },
+			{ 18, 18, 90  },
+			{ 18, 18, 180 },
+			{ 18, 18, 270 },
 		});
 
-		runTests("qrcode-4", QRCode, 41, {
-			{ 31, 31, 0   },
-			{ 31, 31, 90  },
-			{ 31, 31, 180 },
-			{ 31, 31, 270 },
+		runTests("qrcode-4", QRCode, 24, {
+			{ 15, 15, 0   },
+			{ 15, 15, 90  },
+			{ 15, 15, 180 },
+			{ 15, 15, 270 },
 		});
 
 		runTests("qrcode-5", QRCode, 16, {
@@ -712,7 +711,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 1, 0, pure },
 		});
 
-		runTests("falsepositives-1", None, 27, {
+		runTests("falsepositives-1", None, 21, {
 			{ 0, 0, 0, 0, 0   },
 			{ 0, 0, 0, 0, 90  },
 			{ 0, 0, 0, 0, 180 },
