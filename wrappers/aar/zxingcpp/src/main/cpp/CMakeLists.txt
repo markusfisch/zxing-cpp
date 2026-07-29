@@ -4,6 +4,8 @@ project(ZXingCppAndroid)
 # The zxing-cpp requires at least C++20 to build
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 set(ZXING_WRITERS ON)
 
