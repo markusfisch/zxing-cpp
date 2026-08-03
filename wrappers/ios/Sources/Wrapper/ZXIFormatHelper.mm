@@ -20,6 +20,8 @@ ZXing::BarcodeFormat BarcodeFormatFromZXIFormat(ZXIFormat format) {
             return ZXing::BarcodeFormat::QRCode;
         case ZXIFormat::PDF_417:
             return ZXing::BarcodeFormat::PDF417;
+        case ZXIFormat::MICRO_PDF_417:
+            return ZXing::BarcodeFormat::MicroPDF417;
         case ZXIFormat::MAXICODE:
             return ZXing::BarcodeFormat::MaxiCode;
         case ZXIFormat::ITF:
@@ -74,12 +76,16 @@ ZXIFormat ZXIFormatFromBarcodeFormat(ZXing::BarcodeFormat format) {
         case ZXing::BarcodeFormat::Codabar:
             return ZXIFormat::CODABAR;
         case ZXing::BarcodeFormat::Code39:
+        case ZXing::BarcodeFormat::Code39Ext:
+        case ZXing::BarcodeFormat::Code32:
+        case ZXing::BarcodeFormat::PZN:
             return ZXIFormat::CODE_39;
         case ZXing::BarcodeFormat::Code93:
             return ZXIFormat::CODE_93;
         case ZXing::BarcodeFormat::Code128:
             return ZXIFormat::CODE_128;
         case ZXing::BarcodeFormat::DataBar:
+        case ZXing::BarcodeFormat::DataBarOmni:
             return ZXIFormat::DATA_BAR;
         case ZXing::BarcodeFormat::DataBarExp:
             return ZXIFormat::DATA_BAR_EXPANDED;
@@ -107,6 +113,8 @@ ZXIFormat ZXIFormatFromBarcodeFormat(ZXing::BarcodeFormat format) {
             return ZXIFormat::MAXICODE;
         case ZXing::BarcodeFormat::PDF417:
             return ZXIFormat::PDF_417;
+        case ZXing::BarcodeFormat::MicroPDF417:
+            return ZXIFormat::MICRO_PDF_417;
         case ZXing::BarcodeFormat::QRCode:
             return ZXIFormat::QR_CODE;
         case ZXing::BarcodeFormat::UPCA:
