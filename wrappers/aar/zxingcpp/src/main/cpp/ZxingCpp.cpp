@@ -340,8 +340,10 @@ static ReaderOptions CreateReaderOptions(JNIEnv* env, jobject hints)
 		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
 		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
 		.setTryCode39ExtendedMode(GetBooleanField(env, cls, hints, "tryCode39ExtendedMode"))
-		.setValidateCode39CheckSum(GetBooleanField(env, cls, hints, "validateCode39CheckSum"))
-		.setValidateITFCheckSum(GetBooleanField(env, cls, hints, "validateITFCheckSum"))
+		.setValidateOptionalChecksum(
+			GetBooleanField(env, cls, hints, "validateOptionalChecksum") ||
+			GetBooleanField(env, cls, hints, "validateCode39CheckSum") ||
+			GetBooleanField(env, cls, hints, "validateITFCheckSum"))
 		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
 		.setEanAddOnSymbol(static_cast<EanAddOnSymbol>(GetEnumOrdinal(env,
 			env->GetObjectField(hints, env->GetFieldID(cls, "eanAddOnSymbol", "L" PACKAGE "EanAddOnSymbol;")))))

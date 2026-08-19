@@ -111,7 +111,10 @@ object ZxingCpp {
 		var minLineCount: Int = 2,
 		var maxNumberOfSymbols: Int = 0xff,
 		var tryCode39ExtendedMode: Boolean = false,
+		var validateOptionalChecksum: Boolean = false,
+		@Deprecated("Use validateOptionalChecksum")
 		var validateCode39CheckSum: Boolean = false,
+		@Deprecated("Use validateOptionalChecksum")
 		var validateITFCheckSum: Boolean = false,
 		var returnErrors: Boolean = false,
 		var eanAddOnSymbol: EanAddOnSymbol = EanAddOnSymbol.IGNORE,
