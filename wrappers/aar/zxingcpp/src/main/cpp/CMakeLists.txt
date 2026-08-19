@@ -9,7 +9,11 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 set(ZXING_WRITERS ON)
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../core ZXing EXCLUDE_FROM_ALL)
+add_subdirectory(
+	${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../core
+	ZXing
+	EXCLUDE_FROM_ALL
+)
 
 add_library(zxingcpp_android SHARED ZxingCpp.cpp)
 
