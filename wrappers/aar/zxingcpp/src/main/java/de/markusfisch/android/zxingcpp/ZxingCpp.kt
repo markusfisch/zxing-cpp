@@ -21,25 +21,25 @@ import android.graphics.Point
 import android.graphics.Rect
 import java.nio.ByteBuffer
 
-object ZxingCpp {
+public object ZxingCpp {
 	// These enums have to be kept in sync with the native (C++/JNI) side.
-	enum class Binarizer {
+	public enum class Binarizer {
 		LOCAL_AVERAGE, GLOBAL_HISTOGRAM, FIXED_THRESHOLD, BOOL_CAST
 	}
 
-	enum class ContentType {
+	public enum class ContentType {
 		TEXT, BINARY, MIXED, GS1, ISO15434, UNKNOWN_ECI
 	}
 
-	enum class EanAddOnSymbol {
+	public enum class EanAddOnSymbol {
 		IGNORE, READ, REQUIRE
 	}
 
-	enum class ErrorType {
+	public enum class ErrorType {
 		NONE, FORMAT, CHECKSUM, UNSUPPORTED
 	}
 
-	enum class BarcodeFormat(val value: Int) {
+	public enum class BarcodeFormat(public val value: Int) {
 		None(0x0000),
 		All(0x2A2A),
 		AllReadable(0x722A),
@@ -94,11 +94,11 @@ object ZxingCpp {
 		MaxiCode(0x2055),
 	}
 
-	enum class TextMode {
+	public enum class TextMode {
 		PLAIN, ECI, HRI, ESCAPED, HEX, HEX_ECI
 	}
 
-	data class ReaderOptions(
+	public data class ReaderOptions(
 		var formats: Set<BarcodeFormat> = setOf(),
 		var tryHarder: Boolean = true,
 		var tryRotate: Boolean = true,
@@ -121,19 +121,19 @@ object ZxingCpp {
 		var textMode: TextMode = TextMode.HRI,
 	)
 
-	data class Error(
+	public data class Error(
 		val type: ErrorType,
 		val message: String
 	)
 
-	data class GTIN(
+	public data class GTIN(
 		val country: String,
 		val addOn: String,
 		val price: String,
 		val issueNumber: String
 	)
 
-	data class Position(
+	public data class Position(
 		val topLeft: Point,
 		val topRight: Point,
 		val bottomLeft: Point,
@@ -141,7 +141,7 @@ object ZxingCpp {
 		val orientation: Double
 	)
 
-	data class Result(
+	public data class Result(
 		val format: BarcodeFormat,
 		val contentType: ContentType,
 		val text: String,
@@ -162,7 +162,7 @@ object ZxingCpp {
 		val error: Error?
 	)
 
-	fun readYBuffer(
+	public fun readYBuffer(
 		yBuffer: ByteBuffer,
 		rowStride: Int,
 		cropRect: Rect,
@@ -177,7 +177,7 @@ object ZxingCpp {
 		options,
 	)
 
-	external fun readYBuffer(
+	public external fun readYBuffer(
 		yBuffer: ByteBuffer,
 		rowStride: Int,
 		left: Int, top: Int,
@@ -186,7 +186,7 @@ object ZxingCpp {
 		options: ReaderOptions,
 	): List<Result>?
 
-	fun readByteArray(
+	public fun readByteArray(
 		yuvData: ByteArray,
 		rowStride: Int,
 		cropRect: Rect,
@@ -201,7 +201,7 @@ object ZxingCpp {
 		options,
 	)
 
-	external fun readByteArray(
+	public external fun readByteArray(
 		yuvData: ByteArray,
 		rowStride: Int,
 		left: Int, top: Int,
@@ -210,7 +210,7 @@ object ZxingCpp {
 		options: ReaderOptions,
 	): List<Result>?
 
-	fun readBitmap(
+	public fun readBitmap(
 		bitmap: Bitmap,
 		cropRect: Rect,
 		rotation: Int = 0,
@@ -223,7 +223,7 @@ object ZxingCpp {
 		options,
 	)
 
-	external fun readBitmap(
+	public external fun readBitmap(
 		bitmap: Bitmap,
 		left: Int, top: Int,
 		width: Int, height: Int,
@@ -231,15 +231,15 @@ object ZxingCpp {
 		options: ReaderOptions,
 	): List<Result>?
 
-	data class BitMatrix(
+	public data class BitMatrix(
 		val width: Int,
 		val height: Int,
 		val data: ByteArray
 	) {
-		fun get(x: Int, y: Int) = data[y * width + x] == 0.toByte()
+		public fun get(x: Int, y: Int): Boolean = data[y * width + x] == 0.toByte()
 	}
 
-	fun BitMatrix.toBitmap(
+	public fun BitMatrix.toBitmap(
 		setColor: Int = 0xff000000.toInt(),
 		unsetColor: Int = 0xffffffff.toInt()
 	): Bitmap {
@@ -260,7 +260,7 @@ object ZxingCpp {
 		return bitmap
 	}
 
-	fun BitMatrix.toSvg(): String {
+	public fun BitMatrix.toSvg(): String {
 		val sb = StringBuilder()
 		val moduleHeight = if (height == 1) width / 2 else 1
 		for (y in 0 until height) {
@@ -279,7 +279,7 @@ xmlns="http://www.w3.org/2000/svg">
 """
 	}
 
-	fun BitMatrix.toText(
+	public fun BitMatrix.toText(
 		inverted: Boolean = false
 	): String {
 		val sb = StringBuilder()
@@ -306,7 +306,7 @@ xmlns="http://www.w3.org/2000/svg">
 		return sb.toString()
 	}
 
-	fun <T> encodeAsBitmap(
+	public fun <T> encodeAsBitmap(
 		content: T,
 		format: BarcodeFormat,
 		width: Int = 0,
@@ -321,7 +321,7 @@ xmlns="http://www.w3.org/2000/svg">
 		addQuietZones, ecLevel
 	).toBitmap(setColor, unsetColor)
 
-	fun <T> encodeAsSvg(
+	public fun <T> encodeAsSvg(
 		content: T,
 		format: BarcodeFormat,
 		addQuietZones: Boolean = true,
@@ -332,7 +332,7 @@ xmlns="http://www.w3.org/2000/svg">
 		addQuietZones, ecLevel
 	).toSvg()
 
-	fun <T> encodeAsText(
+	public fun <T> encodeAsText(
 		content: T,
 		format: BarcodeFormat,
 		addQuietZones: Boolean = true,
@@ -344,7 +344,7 @@ xmlns="http://www.w3.org/2000/svg">
 		addQuietZones, ecLevel
 	).toText(inverted)
 
-	fun <T> T.encode(
+	public fun <T> T.encode(
 		format: String,
 		width: Int = 0,
 		height: Int = 0,
