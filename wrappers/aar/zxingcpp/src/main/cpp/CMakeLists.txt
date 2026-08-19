@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 project(ZXingCppAndroid)
 
 # The zxing-cpp requires at least C++20 to build
