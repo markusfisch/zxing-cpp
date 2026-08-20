@@ -30,6 +30,16 @@
 #include <stdexcept>
 #include <string>
 
+// Keep the linker from pulling libc++abi's demangler (~165 KB) into this
+// build. Hidden visibility, so other libraries are unaffected.
+extern "C" char* __cxa_demangle(const char*, char*, size_t*, int* status)
+{
+	if (status) {
+		*status = -3; // invalid argument, prints the name and what
+	}
+	return nullptr;
+}
+
 #define PACKAGE "de/markusfisch/android/zxingcpp/ZxingCpp$"
 
 using namespace ZXing;
