@@ -13,18 +13,6 @@
 using namespace ZXing;
 using namespace testing;
 
-namespace ZXing {
-int Utf32ToUtf8(char32_t utf32, char* out);
-}
-
-// Encode Unicode codepoint `utf32` as UTF-8
-std::string Utf32ToUtf8(const char32_t utf32)
-{
-	char buf[4];
-	int len = Utf32ToUtf8(utf32, buf);
-	return std::string(buf, len);
-}
-
 TEST(TextDecoderTest, AppendBINARY_ASCII)
 {
 	uint8_t data[256];
@@ -54,7 +42,7 @@ TEST(TextDecoderTest, AppendAllASCIIRange00_7F)
 	for (int i = 0; i < 0x80; i++) {
 		uint8_t ch = static_cast<uint8_t>(i);
 		data[i] = ch;
-		expected.append(Utf32ToUtf8(i));
+		AppendToUtf8(expected, i);
 
 		dataUTF16BE[i * 2 + 1] = ch;
 		dataUTF16LE[i * 2] = ch;

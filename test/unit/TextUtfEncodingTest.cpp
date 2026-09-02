@@ -26,6 +26,19 @@ TEST(TextUtfEncodingTest, EscapeNonGraphical)
 	EXPECT_EQ(EscapeNonGraphical(u8"\uFFFF"), "<U+FFFF>");
 }
 
+TEST(TextUtfEncodingTest, EscapeNonGraphicalIdempotent)
+{
+	for (char32_t c = 0; c <= 0x1FFFF; ++c) {
+		// if (c >= 0xD800 && c <= 0xDFFF)
+		// 	continue; // skip surrogates
+		std::string buf;
+		AppendToUtf8(buf, c);
+		auto escaped = EscapeNonGraphical(buf);
+		auto escaped2 = EscapeNonGraphical(escaped);
+		EXPECT_EQ(escaped, escaped2) << "Failed for codepoint U+" << std::hex << std::uppercase << (int32_t)c;
+	}
+}
+
 TEST(TextUtfEncodingTest, FromUtf8)
 {
 	EXPECT_EQ(FromUtf8(u8"\U00010000"), L"\U00010000");
