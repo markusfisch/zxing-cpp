@@ -229,16 +229,20 @@ Barcode MergeStructuredAppendSequence(const Barcodes& barcodes)
 	std::list<Barcode> allBarcodes(barcodes.begin(), barcodes.end());
 	allBarcodes.sort([](const Barcode& r1, const Barcode& r2) { return r1.sequenceIndex() < r2.sequenceIndex(); });
 
-	Barcode res = allBarcodes.front();
-	for (auto i = std::next(allBarcodes.begin()); i != allBarcodes.end(); ++i)
-		res.d->content.append(i->d->content);
+	const BarcodeData* bd = allBarcodes.front().d.get();
+	Barcode res(BarcodeData{.format = bd->format, .sai = bd->sai});
+	res.d->sai.index = -1; // mark as merged sequence
+	res.d->content.symbology = bd->content.symbology;
+	for (const auto& barcode : allBarcodes)
+		res.d->content.append(barcode.d->content);
 
-	res.d->position = {};
-	res.d->sai.index = -1;
-
-	if (allBarcodes.back().sequenceSize() != Size(allBarcodes) ||
-		!std::all_of(allBarcodes.begin(), allBarcodes.end(),
-					 [&](Barcode& it) { return it.sequenceId() == allBarcodes.front().sequenceId(); }))
+	if (allBarcodes.back().sequenceSize() != Size(allBarcodes))
+		res.d->error = FormatError("incomplete sequence during structured append sequence merging");
+	else if (!std::all_of(allBarcodes.begin(), allBarcodes.end(),
+						  [&](Barcode& it) { return it.format() == allBarcodes.front().format(); }))
+		res.d->error = FormatError("format not matching during structured append sequence merging");
+	else if (!std::all_of(allBarcodes.begin(), allBarcodes.end(),
+						  [&](Barcode& it) { return it.sequenceId() == allBarcodes.front().sequenceId(); }))
 		res.d->error = FormatError("sequenceIDs not matching during structured append sequence merging");
 
 	return res;
@@ -249,7 +253,7 @@ Barcodes MergeStructuredAppendSequences(const Barcodes& barcodes)
 	std::map<std::string, Barcodes> sas;
 	for (auto& barcode : barcodes) {
 		if (barcode.isPartOfSequence())
-			sas[barcode.sequenceId()].push_back(barcode);
+			sas[ToString(barcode.format()) + barcode.sequenceId()].push_back(barcode);
 	}
 
 	Barcodes res;
