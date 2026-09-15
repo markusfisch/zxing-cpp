@@ -137,10 +137,11 @@ public class BarcodeReader(public var options: Options = Options()) {
 		val topRight: Point,
 		val bottomRight: Point,
 		val bottomLeft: Point,
-		@Deprecated("Use rotation instead") val orientation: Double
-	) {
 		val rotation: Double
-			get() = orientation
+	) {
+		@Deprecated("Use rotation instead")
+		val orientation: Double
+			get() = rotation
 	}
 
 	public data class Result(
@@ -149,7 +150,7 @@ public class BarcodeReader(public var options: Options = Options()) {
 		val text: String?,
 		val contentType: ContentType,
 		val position: Position,
-		@Deprecated("Use rotation instead") val orientation: Int,
+		val rotation: Int,
 		val ecLevel: String?,
 		val symbologyIdentifier: String?,
 		private val extraJsonString: String?,
@@ -160,8 +161,8 @@ public class BarcodeReader(public var options: Options = Options()) {
 		val lineCount: Int,
 		val error: Error?,
 	) {
-		val rotation: Int
-			get() = orientation
+		@Deprecated("Use rotation instead") val orientation: Int
+			get() = rotation
 
 		// Additional symbology-specific metadata (e.g. "UPCE" for the original UPC-E text), keyed by name.
 		val extra: Map<String, Any?> by lazy {

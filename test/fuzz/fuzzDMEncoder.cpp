@@ -14,7 +14,7 @@ using namespace ZXing::DataMatrix;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    std::wstring txt(data, data + size);
+	std::wstring txt(data, data + size);
 	try {
 		Encode(txt);
 	} catch (...) {

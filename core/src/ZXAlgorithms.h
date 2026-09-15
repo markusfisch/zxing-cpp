@@ -142,7 +142,7 @@ template <std::integral T>
 constexpr bool IsSpace(T v) noexcept
 {
 	// Matches the standard ASCII whitespace characters:
-    // ' ', '\t', '\n', '\v', '\f', '\r'
+	// ' ', '\t', '\n', '\v', '\f', '\r'
 	return v == ' ' || ('\t' <= v && v <= '\r');
 }
 
