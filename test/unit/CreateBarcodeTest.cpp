@@ -210,6 +210,7 @@ TEST(CreateBarcodeTest, EANUPCAddOn)
 		  "]E3\\000026000012000003412345", "5D 45 33 30 30 30 30 31 32 30 30 30 30 30 33 34 31 32 33 34 35", "000012000003412345", "Text");
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(CreateBarcodeTest, ZintISO8859_1)
 {
 	// Control chars (SOH & DEL)
@@ -276,6 +277,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 	check(__LINE__, "1234é", {RMQRCode, "eci=ISO8859_1"}, "]Q1", "1234é", "31 32 33 34 E9", true,
 		  "]Q2\\0000261234é", "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 26x0 26x10 0x10", "M", "11");
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(CreateBarcodeTest, ZintGS1)
 {
@@ -325,6 +327,7 @@ TEST(CreateBarcodeTest, ZintGS1)
 		  "0x0 26x0 26x12 0x12", "M", "17");
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(CreateBarcodeTest, ZintBinary)
 {
 	check(__LINE__, std::string("\x00\x80", 2), Code128, "]C0", std::string("\0\xC2\x80", 3),
@@ -337,6 +340,7 @@ TEST(CreateBarcodeTest, ZintBinary)
 		  "5D 7A 33 5C 30 30 30 38 39 39 00 80", "<NUL><U+80>", "Binary",
 		  "0x0 15x0 15x15 0x15" /*position*/, "23%" /*ecLevel*/, "1" /*version*/, true /*fromBytes*/);
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(CreateBarcodeTest, CreatorOptions)
 {
@@ -366,14 +370,14 @@ TEST(CreateBarcodeTest, CreatorOptions)
 #if defined(ZXING_READERS)
 	bc = CreateBarcodeFromText("12345", {DataMatrix});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().formats(DataMatrix).isPure(true).binarizer(Binarizer::BoolCast));
-	EXPECT_EQ(bc.extra("UEC"), "1.0");
+	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif
 #endif // ZXING_ENABLE_DATAMATRIX
 
 #if defined(ZXING_READERS) && ZXING_ENABLE_AZTEC
 	bc = CreateBarcodeFromText("12345", {Aztec});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().formats(Aztec).isPure(true).binarizer(Binarizer::BoolCast));
-	EXPECT_EQ(bc.extra("UEC"), "1.0");
+	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif
 
 #if ZXING_ENABLE_QRCODE
@@ -385,7 +389,7 @@ TEST(CreateBarcodeTest, CreatorOptions)
 	bc = CreateBarcodeFromText("12345", {QRCode, "dataMask=0"});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().isPure(true).binarizer(Binarizer::BoolCast));
 	EXPECT_EQ(bc.extra("dataMask"), "0");
-	EXPECT_EQ(bc.extra("UEC"), "1.0");
+	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif // ZXING_READERS
 }
 

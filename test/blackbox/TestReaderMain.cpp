@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 			Barcode barcode = ReadBarcode(ImageLoader::load(argv[i]).rotated(rotation), opts);
 			std::print("{}: ", argv[i]);
 			if (barcode.isValid())
-				std::println("{}: {}", ToString(barcode.format()), barcode.text());
+				std::println("{}: {}", EnumName(barcode.format()), barcode.text());
 			else
 				std::println("FAILED");
 			if (barcode.isValid() && getenv("WRITE_TEXT")) {
@@ -55,11 +55,16 @@ int main(int argc, char** argv)
 	} else {
 		std::set<std::string> includedTests;
 		for (int i = 2; i < argc; ++i) {
-			if (std::strlen(argv[i]) > 2 && argv[i][0] == '-' && argv[i][1] == 't') {
+			if (std::string_view(argv[i]).starts_with("-t")) {
 				includedTests.insert(argv[i] + 2);
 			}
 		}
 
-		return runBlackBoxTests(pathPrefix, includedTests);
+		try {
+			return runBlackBoxTests(pathPrefix, includedTests);
+		} catch (const std::exception& e) {
+			std::println("{}", e.what());
+		}
 	}
+	return -1;
 }
