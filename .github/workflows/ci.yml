@@ -11,6 +11,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  SCCACHE_GHA_ENABLED: "true"
 
 jobs:
   build:
@@ -27,19 +28,51 @@ jobs:
       with:
         submodules: true
 
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('wrappers/dotnet/**/*.csproj') }}
+        restore-keys: nuget-${{ runner.os }}-
+
     - name: Setup Python 3
       uses: actions/setup-python@v6
       with:
         python-version: '3.x'
 
+    - name: Setup sccache
+      if: runner.os == 'Windows'
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Setup MSVC environment
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1 # puts the real cl.exe on PATH for sccache
+
+    - name: Configure sccache for MSBuild
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        dir="$(cygpath -m "$RUNNER_TEMP")/sccache-bin"
+        mkdir -p "$dir"
+        cp "$SCCACHE_PATH" "$dir/cl.exe"
+        echo "set(CMAKE_VS_GLOBALS \"CLToolExe=cl.exe;CLToolPath=$dir;TrackFileAccess=false;UseMultiToolTask=true\" CACHE STRING \"\")" > "$RUNNER_TEMP/sccache.cmake"
+
+    - name: Setup ccache
+      if: runner.os != 'Windows'
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ matrix.os }}
+
     - name: Configure
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
         -DZXING_BLACKBOX_TESTS=ON -DZXING_TEST_DOTNET=ON -DZXING_TEST_GO=ON -DZXING_TEST_INSTALL=ON -DZXING_UNIT_TESTS=ON
-        -DZXING_PYTHON_MODULE=ON
+        -DZXING_PYTHON_MODULE=ON -DZXING_DISABLE_PCH=ON
+        ${{ runner.os == 'Windows' && format('-C {0}/sccache.cmake', runner.temp) || '' }}
+        ${{ runner.os != 'Windows' && '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache' || '' }}
 
     - name: Build
-      run: cmake --build build --parallel --config ${{env.BUILD_TYPE}}
+      run: cmake --build build --parallel --config ${{env.BUILD_TYPE}} ${{ runner.os == 'Windows' && '-- /v:m /clp:Summary' || '' }}
 
     - name: Set PATH for Tests
       shell: bash # to make the $GITHUB_PATH update work
@@ -80,15 +113,42 @@ jobs:
         python-version: '3.13'
         architecture: arm64
 
+    - name: Setup sccache
+      if: runner.os == 'Windows'
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Setup MSVC environment
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1 # puts the real cl.exe on PATH for sccache
+      with:
+        arch: ${{ matrix.os == 'windows-11-arm' && 'arm64' || 'x64' }}
+
+    - name: Configure sccache for MSBuild
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        dir="$(cygpath -m "$RUNNER_TEMP")/sccache-bin"
+        mkdir -p "$dir"
+        cp "$SCCACHE_PATH" "$dir/cl.exe"
+        echo "set(CMAKE_VS_GLOBALS \"CLToolExe=cl.exe;CLToolPath=$dir;TrackFileAccess=false;UseMultiToolTask=true\" CACHE STRING \"\")" > "$RUNNER_TEMP/sccache.cmake"
+
+    - name: Setup ccache
+      if: runner.os != 'Windows'
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ matrix.os }}-exp
+
     - name: Configure
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
         -DZXING_READERS=ON -DZXING_WRITERS=BOTH -DZXING_EXPERIMENTAL_API=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_TEST_INSTALL=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=ON
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_TEST_INSTALL=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON -DZXING_DISABLE_PCH=ON
+        ${{ runner.os == 'Windows' && format('-C {0}/sccache.cmake', runner.temp) || '' }}
+        ${{ runner.os != 'Windows' && '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache' || '' }}
         ${{ steps.setup-python.outputs.python-path != '' && format('-DPython_EXECUTABLE={0}', steps.setup-python.outputs.python-path) || '' }}
 
     - name: Build
-      run: cmake --build build --parallel --config ${{env.BUILD_TYPE}}
+      run: cmake --build build --parallel --config ${{env.BUILD_TYPE}} ${{ runner.os == 'Windows' && '-- /v:m /clp:Summary' || '' }}
 
     - name: Set PATH for Tests
       shell: bash # to make the $GITHUB_PATH update work
@@ -136,14 +196,20 @@ jobs:
       with:
         submodules: true
 
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ubuntu-asan-ubsan
+
     - name: Configure
       run: >
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DZXING_WRITERS=BOTH
         -DZXING_BLACKBOX_TESTS=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=OFF -DZXING_C_API=OFF
+        -DZXING_DISABLE_PCH=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         -DCMAKE_CXX_COMPILER=clang++
-        -DCMAKE_CXX_FLAGS="-march=native -fsanitize=address,undefined -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-sanitize-recover=all"
+        -DCMAKE_CXX_FLAGS="-march=x86-64-v3 -fsanitize=address,undefined -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-sanitize-recover=all"
         -DCMAKE_C_COMPILER=clang
-        -DCMAKE_C_FLAGS="-march=native -fsanitize=address,undefined -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-sanitize-recover=all"
+        -DCMAKE_C_FLAGS="-march=x86-64-v3 -fsanitize=address,undefined -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-sanitize-recover=all"
 
     - name: Build
       run: cmake --build build --parallel
@@ -163,9 +229,9 @@ jobs:
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DZXING_WRITERS=OFF -DZXING_EXAMPLES=OFF
         -DZXING_BLACKBOX_TESTS=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF -DZXING_C_API=OFF
         -DCMAKE_CXX_COMPILER=clang++
-        -DCMAKE_CXX_FLAGS="-march=native -fsanitize=thread -fno-optimize-sibling-calls -fno-omit-frame-pointer -g -fno-sanitize-recover=all"
+        -DCMAKE_CXX_FLAGS="-march=x86-64-v3 -fsanitize=thread -fno-optimize-sibling-calls -fno-omit-frame-pointer -g -fno-sanitize-recover=all"
         -DCMAKE_C_COMPILER=clang
-        -DCMAKE_C_FLAGS="-march=native -fsanitize=thread -fno-optimize-sibling-calls -fno-omit-frame-pointer -g -fno-sanitize-recover=all"
+        -DCMAKE_C_FLAGS="-march=x86-64-v3 -fsanitize=thread -fno-optimize-sibling-calls -fno-omit-frame-pointer -g -fno-sanitize-recover=all"
 
     - name: Build
       run: cmake --build build --parallel
@@ -221,9 +287,18 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v5
+
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: android
+
     - name: Build the lib/app
       working-directory: wrappers/android
-      run: ./gradlew assembleRelease
+      # PRs only build arm64 to save time; master builds all ABIs
+      run: ./gradlew assembleRelease -PuseCcache ${{ github.event_name == 'pull_request' && '-PabiFilters=arm64-v8a' || '' }}
 
     - uses: actions/upload-artifact@v6
       with:
