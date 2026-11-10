@@ -378,19 +378,19 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 					if (!expectAt(mode, rotation))
 						continue;
 #if !ZXING_ENABLE_UNICODE
-					std::string txt;
+					std::wstring txt;
 					if (expected.contains("TextPlain"))
-						txt = expected.at("TextPlain");
+						txt = FromUtf8(expected.at("TextPlain"));
 					if (expected.contains("TextEscaped"))
-						txt = expected.at("TextEscaped");
-					if (std::ranges::any_of(txt, [](char c) { return static_cast<unsigned char>(c) > 127; }))
+						txt = FromUtf8(expected.at("TextEscaped"));
+					if (std::ranges::any_of(txt, [](wchar_t c) { return static_cast<unsigned int>(c) > 255; }))
 						continue;
 #endif
 
 					// search expected in found, if not in found, report missing
 					auto it = std::ranges::find_if(found, [&](const auto& barcode) {
 						for (const auto& [key, value] : expected) {
-							if (IsUpper(key.front()) && barcode.extra(key) != value) {
+							if (IsUpper(key.front()) && !value.empty() && barcode.extra(key) != value) {
 								// println("    Mismatch for key '{}': expected '{}' but got '{}'", key, value, barcode.extra(key));
 								return false;
 							}
@@ -412,7 +412,7 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 					auto str = std::format("{}: \"{}\", Extra: {}", EnumName(barcode.format()),
 										   Abbrev(barcode.text(TextMode::Escaped), 30), barcode.extra());
 #if !ZXING_ENABLE_UNICODE
-					if (str.ends_with("\"\""))
+					if (barcode.text().empty())
 						continue;
 #endif
 					unexpected[test.imgPath][str](mode, rotation) = true;
@@ -420,19 +420,19 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 			}
 		}
 
-		modeSummaries += std::format("| {}: {:3} {:3} {:3} {:3}  -> {:3}ms ", ToString(mode), numFound[0], numFound[1],
+		modeSummaries += std::format("| {}: {:2} {:2} {:2} {:2}  -> {:3}ms ", ToString(mode), numFound[0], numFound[1],
 									 numFound[2], numFound[3], decodeTime);
 	}
-	std::println("{:25} {:3} images {}", directory.stem().string(), Size(imagePaths), modeSummaries);
+	std::println("{:20} {:3} images {}", directory.stem().string(), Size(imagePaths), modeSummaries);
 
 	auto printMismatches = [&](const std::map<fs::path, std::map<std::string, TestFilter>>& mismatches, std::string_view title) {
 		for (const auto& [imagePath, expected] : mismatches) {
 			for (const auto& [expectedText, found] : expected) {
-				std::print("{:35} ", imagePath.lexically_relative(directory.parent_path()).string());
+				std::print("{:30} ", imagePath.lexically_relative(directory.parent_path()).string());
 				for (const auto mode : {TestMode::Slow, TestMode::Fast, TestMode::Pure}) {
 					std::print(" | {}:", ToString(mode));
 					for (int rotation : {0, 1, 2, 3})
-						std::print(" {:>3}", found(mode, rotation) ? 'X' : ' ');
+						std::print(" {:>2}", found(mode, rotation) ? 'X' : ' ');
 					std::print("          ");
 				}
 				std::println(" | {}: {}", title, expectedText);
@@ -454,6 +454,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 										})))
 			directories.push_back(entry.path());
 	std::ranges::sort(directories);
+	if (directories.empty())
+		directories.push_back(testPathPrefix);
 
 	auto startTime = std::chrono::steady_clock::now();
 	for (const auto& directory : directories)
